@@ -117,7 +117,7 @@ namespace IngameScript {
             InitializeOperators();
             InitializeItems();
             Runtime.UpdateFrequency = updateFrequency;
-            profiler = new RuntimeTracker(PROGRAM);
+            profiler = new RuntimeTracker(PROGRAM, 3600);
         }
 
         static void Print(String str) { PROGRAM.Echo(str); }
