@@ -15,9 +15,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyCommands.Tests", "EasyC
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "docs", "docs\docs.shproj", "{CE8C102D-3998-414C-990D-92D4A2EDF4CE}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "RuntimeTracker", "RuntimeTracker\RuntimeTracker.shproj", "{7C4FB11F-6734-4C2B-BFEF-7CC6D100D168}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		RuntimeTracker\RuntimeTracker.projitems*{7c4fb11f-6734-4c2b-bfef-7cc6d100d168}*SharedItemsImports = 13
 		docs\docs.projitems*{ce8c102d-3998-414c-990d-92d4a2edf4ce}*SharedItemsImports = 13
+		RuntimeTracker\RuntimeTracker.projitems*{d2e492fe-1bbf-4b9e-8c49-6303fbde589d}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

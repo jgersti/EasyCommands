@@ -50,6 +50,8 @@ namespace IngameScript {
             KeyValuePair(ProgramState.COMPLETE, KeyValuePair("Complete", false))
         );
 
+        RuntimeTracker profiler;
+
         String defaultFunction;
         String customData;
         List<String> commandStrings;
@@ -115,21 +117,27 @@ namespace IngameScript {
             InitializeOperators();
             InitializeItems();
             Runtime.UpdateFrequency = updateFrequency;
+            profiler = new RuntimeTracker(PROGRAM);
         }
 
         static void Print(String str) { PROGRAM.Echo(str); }
         static void Info(String str) { if (PROGRAM.logLevel != LogLevel.SCRIPT_ONLY) Print(str); }
 
         public void Main(string argument) {
+            profiler.AddRuntime();
             try {
                 if (!ParseCommands()) {
                     Runtime.UpdateFrequency = updateFrequency;
+                    profiler.AddInstructions();
+                    Print(profiler.Write());
                     return;
                 }
             } catch (Exception e) {
                 Print("Exception Occurred During Parsing:");
                 Print(e.Message);
                 Runtime.UpdateFrequency = UpdateFrequency.None;
+                profiler.AddInstructions();
+                Print(profiler.Write());
                 return;
             }
 
@@ -154,6 +162,8 @@ namespace IngameScript {
                 Print(e.Message);
                 Runtime.UpdateFrequency = UpdateFrequency.None;
             }
+            profiler.AddInstructions();
+            Print(profiler.Write());
         }
 
         void RunThreads() {
