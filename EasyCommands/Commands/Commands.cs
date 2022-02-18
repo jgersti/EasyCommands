@@ -28,7 +28,7 @@ namespace IngameScript {
             }
         }
 
-        public interface InterruptableCommand {
+        public interface IInterruptableCommand {
             void Break();
             void Continue();
         }
@@ -116,7 +116,7 @@ namespace IngameScript {
                     }
                 }
 
-                return switchExecution ? false : function.Execute();
+                return !switchExecution && function.Execute();
             }
             public override Command Clone() => new FunctionCommand(switchExecution, functionName, inputParameters);
             public override void Reset() => function = null;
@@ -193,8 +193,8 @@ namespace IngameScript {
 
         public delegate bool ControlFunction(Thread currentThread);
 
-        public InterruptableCommand GetInterrupableCommand(string controlStatement) {
-            InterruptableCommand breakCommand = GetCurrentThread().GetCurrentCommand<InterruptableCommand>(command => !(command is ConditionalCommand) || ((ConditionalCommand)command).alwaysEvaluate);
+        public IInterruptableCommand GetInterrupableCommand(string controlStatement) {
+            IInterruptableCommand breakCommand = GetCurrentThread().GetCurrentCommand<IInterruptableCommand>(command => !(command is ConditionalCommand) || ((ConditionalCommand)command).alwaysEvaluate);
             if (breakCommand == null) throw new Exception("Invalid use of " + controlStatement + " command");
             return breakCommand;
         }
@@ -261,15 +261,15 @@ namespace IngameScript {
 
         public class BlockCommand : Command {
             public Selector entityProvider;
-            public Action<BlockHandler, Object> blockAction;
+            public Action<IBlockHandler, Object> blockAction;
 
-            public BlockCommand(Selector provider, Action<BlockHandler, Object> action) {
+            public BlockCommand(Selector provider, Action<IBlockHandler, Object> action) {
                 entityProvider = provider;
                 blockAction = action;
             }
 
             public override bool Execute() {
-                BlockHandler handler = BlockHandlerRegistry.GetBlockHandler(entityProvider.GetBlockType());
+                IBlockHandler handler = BlockHandlerRegistry.GetBlockHandler(entityProvider.GetBlockType());
                 entityProvider.GetEntities().ForEach(e => blockAction(handler, e));
                 return true;
             }
@@ -322,7 +322,7 @@ namespace IngameScript {
             }
         }
 
-        public class ConditionalCommand : Command, InterruptableCommand {
+        public class ConditionalCommand : Command, IInterruptableCommand {
             public Variable condition;
             public bool alwaysEvaluate, evaluated, evaluatedValue, isExecuting, shouldBreak;
             public Command conditionMetCommand, conditionNotMetCommand;
@@ -425,7 +425,7 @@ namespace IngameScript {
             public override Command SearchCurrentCommand(Func<Command, bool> filter) => currentCommands[0].SearchCurrentCommand(filter) ?? base.SearchCurrentCommand(filter);
         }
 
-        public class ForEachCommand : Command, InterruptableCommand {
+        public class ForEachCommand : Command, IInterruptableCommand {
             public string iterator;
             public Variable list;
             public Command command;

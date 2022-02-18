@@ -87,7 +87,7 @@ namespace EasyCommands.Tests.ScriptTests
             program.itemNamesToFilters.Clear();
             program.InitializeItems();
 
-            setScript(script);
+            SetScript(script);
         }
 
         public Func<IMyIntergridCommunicationSystem> GetIGCSupplier() => () => mockIGC;
@@ -107,7 +107,7 @@ namespace EasyCommands.Tests.ScriptTests
             nextRandom.ForEach(next => sequence.Returns(next));
         }
 
-        public void setScript(String script) {
+        public void SetScript(String script) {
             me.Setup(b => b.CustomData).Returns(script);
         }
 
