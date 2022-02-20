@@ -96,8 +96,10 @@ namespace IngameScript {
             KeyValuePair(typeof(KeyedList), Return.LIST)
         );
 
-        public static List<Return> GetTypes(Type type) => type != typeof(object) ? NewList(PrimitiveTypeMap[type])
-            : ((Return[])Enum.GetValues(typeof(Return))).ToList();
+        public static List<Return> GetTypes(Type type) =>
+            type != typeof(object)
+            ? NewList(PrimitiveTypeMap[type])
+            : NewList((Return[])Enum.GetValues(typeof(Return)));
 
         public static Primitive ResolvePrimitive(object o) => new Primitive(PrimitiveTypeMap[o.GetType()], (o is double || o is int) ? Convert.ToSingle(o) : o);
 
@@ -110,11 +112,12 @@ namespace IngameScript {
         public static Color CastColor(Primitive p) => Cast<Color>(p);
         public static KeyedList CastList(Primitive p) => Cast<KeyedList>(p);
 
-        public static Color? GetColor(String s) => (s.StartsWith("#") && s.Length == 7) ?
-            new Color(HexToInt(s.Substring(1, 2)), HexToInt(s.Substring(3, 2)), HexToInt(s.Substring(5, 2))) :
-            (colors.ContainsKey(s.ToLower()) ? colors[s.ToLower()] : (Color?)null);
+         static Color? GetColor(String s) =>
+            (s.StartsWith("#") && s.Length == 7)
+            ? new Color(HexToInt(s.Substring(1, 2)), HexToInt(s.Substring(3, 2)), HexToInt(s.Substring(5, 2)))
+            : (colors.ContainsKey(s.ToLower()) ? colors[s.ToLower()] : (Color?)null);
 
-        public static Vector3D? GetVector(String s) {
+        static Vector3D? GetVector(String s) {
             var components = NewList<double>();
             foreach (string component in s.Split(':')) {
                 double result;
@@ -124,11 +127,9 @@ namespace IngameScript {
         }
 
         static string VectorToString(Vector3D vector) => vector.X + ":" + vector.Y + ":" + vector.Z;
-
         static string ColorToString(Color color) => "#" + IntToHex(color.R) + IntToHex(color.G) + IntToHex(color.B);
 
         static int HexToInt(string hex) => int.Parse(hex.ToUpper(), System.Globalization.NumberStyles.AllowHexSpecifier);
-
         static string IntToHex(int hex) => hex.ToString("X2");
     }
 }
