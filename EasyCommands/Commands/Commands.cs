@@ -388,7 +388,7 @@ namespace IngameScript {
             public IVariable loopCount;
             int loopsLeft;
 
-            public MultiActionCommand(List<Command> commandsToExecute, int loops = 1) : this(commandsToExecute, new StaticVariable(ResolvePrimitive(loops))) {
+            public MultiActionCommand(List<Command> commandsToExecute, int loops = 1) : this(commandsToExecute, GetStaticVariable(loops)) {
 
             }
 
@@ -398,7 +398,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                if (currentCommands == null || currentCommands.Count == 0) {
+                if ((currentCommands?.Count ?? 0) == 0) {
                     currentCommands = commandsToExecute.Select(c => c.Clone()).ToList();//Deep Copy
                     if (loopsLeft == 0) loopsLeft = (int)Math.Round(CastNumber(loopCount.GetValue()));
                     loopsLeft -= 1;
@@ -412,7 +412,7 @@ namespace IngameScript {
                     }
                 }
 
-                if (currentCommands != null && currentCommands.Count > 0) return false;
+                if (currentCommands?.Count > 0) return false;
                 if (loopsLeft <= 0) return true;
 
                 Reset();
@@ -452,7 +452,7 @@ namespace IngameScript {
                 if (!executed) executed = command.Execute();
                 if (executed) command.Reset();
 
-                return executed && (listElements == null || listElements.Count == 0);
+                return executed && (listElements?.Count ?? 0) == 0;
             }
 
             public override void Reset() {

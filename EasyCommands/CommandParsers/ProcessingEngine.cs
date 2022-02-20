@@ -232,7 +232,7 @@ namespace IngameScript {
 
             //ThatBlockConditionProcessor
             FourValueRule(Type<ThatCommandParameter>, requiredRight<ComparisonCommandParameter>(), optionalRight<PropertySupplierCommandParameter>(), optionalRight<DirectionCommandParameter>(), optionalRight<VariableCommandParameter>(),
-                (with, p, prop, dir, var) => p.Satisfied() && (var.GetValue() != null || prop.GetValue() != null),
+                (with, p, prop, dir, var) => p.Satisfied() && AnySatisfied(var, prop),
                 (with, p, prop, dir, var) => NewList<ICommandParameter>(new ThatCommandParameter(), new BlockConditionCommandParameter(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true))))),
 
             //ConditionalSelectorProcessor
@@ -245,7 +245,7 @@ namespace IngameScript {
 
             //BlockComparisonProcessor
             ThreeValueRule(Type<ComparisonCommandParameter>, optionalEither<PropertySupplierCommandParameter>(), optionalEither<DirectionCommandParameter>(), optionalRight<VariableCommandParameter>(),
-                (p, prop, dir, var) => var.GetValue() != null || prop.GetValue() != null,
+                (p, prop, dir, var) => AnySatisfied(var, prop),
                 (p, prop, dir, var) => new BlockConditionCommandParameter(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true)))),
 
             //AggregateConditionProcessor
@@ -288,7 +288,7 @@ namespace IngameScript {
                 TwoValueRule(Type<SelectorCommandParameter>, requiredEither<PropertySupplierCommandParameter>(), optionalEither<DirectionCommandParameter>(),
                     (s, p, d) => new VariableCommandParameter(new AggregatePropertyVariable(PROGRAM.SumAggregator, s.value, p.value.WithDirection(d?.value)))),
                 TwoValueRule(Type<SelectorCommandParameter>, optionalEither<PropertySupplierCommandParameter>(), optionalEither<DirectionCommandParameter>(),
-                    (s, p, d) => p.GetValue() != null || d.GetValue() != null,//Must have at least one!
+                    (s, p, d) => AnySatisfied(p, d),
                     (s, p, d) => {
                         PropertySupplier property = p?.value ?? new PropertySupplier();
                         Direction? direction = d?.value;
