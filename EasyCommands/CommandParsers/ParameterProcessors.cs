@@ -20,17 +20,17 @@ using VRageMath;
 namespace IngameScript {
     partial class Program : MyGridProgram {
 
-        public interface ParameterProcessor : IComparable<ParameterProcessor> {
+        public interface IParameterProcessor : IComparable<IParameterProcessor> {
             int Rank { get; set; }
             List<Type> GetProcessedTypes();
             bool CanProcess(ICommandParameter p);
             bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches);
         }
 
-        public abstract class ParameterProcessor<T> : ParameterProcessor where T : class, ICommandParameter {
+        public abstract class ParameterProcessor<T> : IParameterProcessor where T : class, ICommandParameter {
             public int Rank { get; set; }
             public virtual List<Type> GetProcessedTypes() => NewList(typeof(T));
-            public int CompareTo(ParameterProcessor other) => Rank.CompareTo(other.Rank);
+            public int CompareTo(IParameterProcessor other) => Rank.CompareTo(other.Rank);
             public bool CanProcess(ICommandParameter p) => p is T;
             public abstract bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches);
         }
@@ -70,7 +70,7 @@ namespace IngameScript {
         public class ListProcessor : ParameterProcessor<OpenBracketCommandParameter> {
             public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
                 finalParameters = null;
-                var indexValues = NewList<Variable>();
+                var indexValues = NewList<IVariable>();
                 int startIndex = i;
                 for (int j = startIndex + 1; j < p.Count; j++) {
                     if (p[j] is OpenBracketCommandParameter) return false;
@@ -88,9 +88,9 @@ namespace IngameScript {
                 throw new Exception("Missing Closing Bracket for List");
             }
 
-            Variable ParseVariable(List<ICommandParameter> p, int startIndex, int endIndex) {
+            IVariable ParseVariable(List<ICommandParameter> p, int startIndex, int endIndex) {
                 var range = p.GetRange(startIndex + 1, endIndex - (startIndex + 1));
-                ValueCommandParameter<Variable> variable = PROGRAM.ParseParameters<ValueCommandParameter<Variable>>(range);
+                ValueCommandParameter<IVariable> variable = PROGRAM.ParseParameters<ValueCommandParameter<IVariable>>(range);
                 if (variable == null) throw new Exception("List Index Values Must Resolve To a Variable");
                 return variable.value;
             }
@@ -99,7 +99,7 @@ namespace IngameScript {
         public class MultiListProcessor : ParameterProcessor<ListCommandParameter> {
             public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
                 while (i > 1 && p[i - 1] is ListCommandParameter) i--;
-                finalParameters = NewList<ICommandParameter>(new ListIndexCommandParameter(new ListIndexVariable(((ListCommandParameter)p[i]).value, GetVariables(NewKeyedList())[0])));
+                finalParameters = NewList<ICommandParameter>(new ListIndexCommandParameter(new ListIndexVariable(((ListCommandParameter)p[i]).value, EmptyList())));
                 p[i] = finalParameters[0];
                 return true;
             }
@@ -118,7 +118,7 @@ namespace IngameScript {
                 var copy = new List<ICommandParameter>(p);
 
                 bool processed = false;
-                foreach (ParameterProcessor processor in eligibleProcessors) {
+                foreach (IParameterProcessor processor in eligibleProcessors) {
                     if (processed) {
                         List<ICommandParameter> ignored;
                         var additionalCopy = new List<ICommandParameter>(copy);
@@ -164,7 +164,7 @@ namespace IngameScript {
                 PropertySupplier propertySupplier = propertyProcessor.Satisfied() ? propertyProcessor.GetValue().value : new PropertySupplier();
                 if (directionProcessor.Satisfied()) propertySupplier = propertySupplier.WithDirection(directionProcessor.GetValue().value);
 
-                Variable variableValue = GetStaticVariable(true);
+                IVariable variableValue = GetStaticVariable(true);
                 if (variableProcessor.Satisfied()) {
                     variableValue = variableProcessor.GetValue().value;
                     propertySupplier = propertySupplier.WithPropertyValue(variableValue);

@@ -20,7 +20,7 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
 
-        public class Primitive {
+        public class Primitive : IComparable<Primitive> {
             public Return returnType;
             public object value;
 
@@ -33,9 +33,9 @@ namespace IngameScript {
             public Primitive Minus(Primitive p) => PROGRAM.PerformOperation(BiOperand.SUBTRACT, this, p);
             public Primitive Multiply(Primitive p) => PROGRAM.PerformOperation(BiOperand.MULTIPLY, this, p);
             public Primitive Divide(Primitive p) => PROGRAM.PerformOperation(BiOperand.DIVIDE, this, p);
-            public int Compare(Primitive p) => Convert.ToInt32(CastNumber(PROGRAM.PerformOperation(BiOperand.COMPARE, this, p)));
+            public int CompareTo(Primitive p) => Convert.ToInt32(CastNumber(PROGRAM.PerformOperation(BiOperand.COMPARE, this, p)));
             public Primitive Not() => PROGRAM.PerformOperation(UniOperand.REVERSE, this);
-            public Primitive DeepCopy() => ResolvePrimitive((value is KeyedList) ? ((KeyedList)value).DeepCopy() : value);
+            public Primitive DeepCopy() => ResolvePrimitive((value as KeyedList)?.DeepCopy() ?? value);
         }
 
         delegate Object Converter(Primitive p);
@@ -48,7 +48,7 @@ namespace IngameScript {
                 CastFunction(Return.NUMERIC, p => CastNumber(p) != 0),
                 CastFunction(Return.STRING, p => {
                     Primitive primitive;
-                    return ParsePrimitive(CastString(p), out primitive) ? CastBoolean(primitive) : false;
+                    return ParsePrimitive(CastString(p), out primitive) && CastBoolean(primitive);
                 }),
                 CastFunction(Return.DEFAULT, Failure(Return.BOOLEAN))
             )),

@@ -19,16 +19,16 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program {
-        public interface Selector {
+        public interface ISelector {
             List<Object> GetEntities();
             Block GetBlockType();
         }
 
-        public class ConditionalSelector : Selector {
-            public Selector selector;
+        public class ConditionalSelector : ISelector {
+            public ISelector selector;
             public BlockCondition condition;
 
-            public ConditionalSelector(Selector sel, BlockCondition cond) {
+            public ConditionalSelector(ISelector sel, BlockCondition cond) {
                 selector = sel;
                 condition = cond;
             }
@@ -38,11 +38,11 @@ namespace IngameScript {
             public List<object> GetEntities() => selector.GetEntities().Where(b => condition(b, selector.GetBlockType())).ToList();
         }
 
-        public class IndexSelector : Selector {
-            public Selector selector;
-            public Variable index;
+        public class IndexSelector : ISelector {
+            public ISelector selector;
+            public IVariable index;
 
-            public IndexSelector(Selector sel, Variable ind) {
+            public IndexSelector(ISelector sel, IVariable ind) {
                 selector = sel;
                 index = ind;
             }
@@ -50,7 +50,7 @@ namespace IngameScript {
             public Block GetBlockType() => selector.GetBlockType();
 
             public List<Object> GetEntities() {
-                var entities = selector.GetEntities();
+                var entities = selector.GetEntities().ToList();
                 IBlockHandler b = BlockHandlerRegistry.GetBlockHandler(GetBlockType());
 
                 return CastList(index.GetValue()).GetValues()
@@ -67,12 +67,12 @@ namespace IngameScript {
             }
         }
 
-        public class BlockSelector : Selector {
+        public class BlockSelector : ISelector {
             public Block? blockType;
             public bool isGroup;
-            public Variable selector;
+            public IVariable selector;
 
-            public BlockSelector(Block? type, bool group, Variable sel) {
+            public BlockSelector(Block? type, bool group, IVariable sel) {
                 blockType = type;
                 isGroup = group;
                 selector = sel;
@@ -100,7 +100,7 @@ namespace IngameScript {
             }
         }
 
-        public class SelfSelector : Selector {
+        public class SelfSelector : ISelector {
             public Block? blockType;
 
             public SelfSelector(Block? type) {
@@ -111,7 +111,7 @@ namespace IngameScript {
             public List<object> GetEntities() => BlockHandlerRegistry.GetSelf(blockType) ?? BlockHandlerRegistry.GetBlocks(GetBlockType());
         }
 
-        public class BlockTypeSelector : Selector {
+        public class BlockTypeSelector : ISelector {
             public Block blockType;
 
             public BlockTypeSelector(Block type) {

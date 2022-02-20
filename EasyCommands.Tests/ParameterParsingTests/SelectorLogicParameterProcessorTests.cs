@@ -50,7 +50,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockCommand bc = (BlockCommand)command;
             Assert.IsTrue(bc.entityProvider is IndexSelector);
             IndexSelector iep = (IndexSelector)bc.entityProvider;
-            List<Variable> listIndexes = CastList(iep.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(iep.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
         }
@@ -63,7 +63,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockCommand bc = (BlockCommand)command;
             Assert.IsTrue(bc.entityProvider is IndexSelector);
             IndexSelector iep = (IndexSelector)bc.entityProvider;
-            List<Variable> listIndexes = CastList(iep.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(iep.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
         }
@@ -191,7 +191,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             Assert.AreEqual("a", list.value);
             Assert.IsTrue(variable.index is IndexVariable);
             IndexVariable index = (IndexVariable)variable.index;
-            Assert.AreEqual(0, CastNumber(CastList(index.GetValue()).GetValues()[0].GetValue()));
+            Assert.AreEqual(0, CastNumber(CastList(index.GetValue()).GetValues().First().GetValue()));
         }
 
         [TestMethod]
@@ -207,7 +207,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             ListIndexVariable second = (ListIndexVariable)sep.selector;
             Assert.IsTrue(second.index is IndexVariable);
             IndexVariable secondIndex = (IndexVariable)second.index;
-            Assert.AreEqual(1, CastNumber(CastList(secondIndex.GetValue()).GetValues()[0].GetValue()));
+            Assert.AreEqual(1, CastNumber(CastList(secondIndex.GetValue()).GetValues().First().GetValue()));
 
             Assert.IsTrue(second.expectedList is ListIndexVariable);
             ListIndexVariable first = (ListIndexVariable)second.expectedList;
@@ -216,7 +216,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             Assert.AreEqual("a", firstList.value);
             Assert.IsTrue(first.index is IndexVariable);
             IndexVariable firstIndex = (IndexVariable)first.index;
-            Assert.AreEqual(0, CastNumber(CastList(firstIndex.GetValue()).GetValues()[0].GetValue()));
+            Assert.AreEqual(0, CastNumber(CastList(firstIndex.GetValue()).GetValues().First().GetValue()));
         }
 
         [TestMethod]
@@ -227,7 +227,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockCommand bc = (BlockCommand)command;
             Assert.IsTrue(bc.entityProvider is IndexSelector);
             IndexSelector iep = (IndexSelector)bc.entityProvider;
-            List<Variable> listIndexes = CastList(iep.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(iep.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
             Assert.IsTrue(iep.selector is BlockSelector);
@@ -247,7 +247,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockSelector sep = (BlockSelector)bc.entityProvider;
             Assert.IsTrue(sep.selector is ListIndexVariable);
             ListIndexVariable selector = (ListIndexVariable)sep.selector;
-            List<Variable> listIndexes = CastList(selector.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(selector.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
             Assert.IsTrue(selector.expectedList is AmbiguousStringVariable);
@@ -266,7 +266,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             Assert.AreEqual(Block.SOUND, sep.blockType);
             Assert.IsTrue(sep.selector is ListIndexVariable);
             ListIndexVariable selector = (ListIndexVariable)sep.selector;
-            List<Variable> listIndexes = CastList(selector.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(selector.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
             Assert.IsTrue(selector.expectedList is AmbiguousStringVariable);
@@ -282,7 +282,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockCommand bc = (BlockCommand)command;
             Assert.IsTrue(bc.entityProvider is IndexSelector);
             IndexSelector iep = (IndexSelector)bc.entityProvider;
-            List<Variable> outerIndex = CastList(iep.index.GetValue()).GetValues();
+            List<IVariable> outerIndex = CastList(iep.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, outerIndex.Count);
             Assert.AreEqual(1f, outerIndex[0].GetValue().value);
 
@@ -290,7 +290,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockSelector sep = (BlockSelector)iep.selector;
             Assert.IsTrue(sep.selector is ListIndexVariable);
             ListIndexVariable selector = (ListIndexVariable)sep.selector;
-            List<Variable> innerIndex = CastList(selector.index.GetValue()).GetValues();
+            List<IVariable> innerIndex = CastList(selector.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, innerIndex.Count);
             Assert.AreEqual(0f, innerIndex[0].GetValue().value);
             Assert.IsTrue(selector.expectedList is AmbiguousStringVariable);
@@ -306,7 +306,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             BlockCommand bc = (BlockCommand)command;
             Assert.IsTrue(bc.entityProvider is IndexSelector);
             IndexSelector iep = (IndexSelector)bc.entityProvider;
-            List<Variable> listIndexes = CastList(iep.index.GetValue()).GetValues();
+            List<IVariable> listIndexes = CastList(iep.index.GetValue()).GetValues().ToList();
             Assert.AreEqual(1, listIndexes.Count);
             Assert.AreEqual(0f, listIndexes[0].GetValue().value);
             Assert.IsTrue(iep.selector is BlockSelector);

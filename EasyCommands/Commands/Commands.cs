@@ -63,15 +63,15 @@ namespace IngameScript {
                 if (command is FunctionCommand) {
                     thread.SetName(((FunctionCommand)command).functionName());
                 }
-                thread.threadVariables = new Dictionary<string, Variable>(PROGRAM.GetCurrentThread().threadVariables);
+                thread.threadVariables = new Dictionary<string, IVariable>(PROGRAM.GetCurrentThread().threadVariables);
                 return true;
             }
         }
 
         public class PrintCommand : Command {
-            public Variable variable;
+            public IVariable variable;
 
-            public PrintCommand(Variable v) {
+            public PrintCommand(IVariable v) {
                 variable = v;
             }
 
@@ -84,11 +84,11 @@ namespace IngameScript {
         public class FunctionCommand : Command {
             public bool switchExecution;
             public Supplier<string> functionName;
-            public List<Variable> inputParameters;
+            public List<IVariable> inputParameters;
 
             public Command function;
 
-            public FunctionCommand(bool shouldSwitch, Supplier<string> name, List<Variable> parameters) {
+            public FunctionCommand(bool shouldSwitch, Supplier<string> name, List<IVariable> parameters) {
                 switchExecution = shouldSwitch;
                 functionName = name;
                 inputParameters = parameters;
@@ -126,11 +126,11 @@ namespace IngameScript {
 
         public class VariableAssignmentCommand : Command {
             public String variableName;
-            public Variable variable;
+            public IVariable variable;
             public bool isGlobal;
             public bool useReference;
 
-            public VariableAssignmentCommand(string name, Variable var, bool reference, bool global) {
+            public VariableAssignmentCommand(string name, IVariable var, bool reference, bool global) {
                 variableName = name;
                 variable = var;
                 useReference = reference;
@@ -138,7 +138,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                Variable value = useReference ? variable : new StaticVariable(variable.GetValue().DeepCopy());
+                IVariable value = useReference ? variable : new StaticVariable(variable.GetValue().DeepCopy());
                 if (isGlobal) {
                     PROGRAM.SetGlobalVariable(variableName, value);
                 } else {
@@ -151,9 +151,9 @@ namespace IngameScript {
         public class VariableIncrementCommand : Command {
             public String variableName;
             public bool increment;
-            public Variable variable;
+            public IVariable variable;
 
-            public VariableIncrementCommand(String VariableName, bool Increment, Variable Variable) {
+            public VariableIncrementCommand(String VariableName, bool Increment, IVariable Variable) {
                 variableName = VariableName;
                 increment = Increment;
                 variable = Variable;
@@ -163,7 +163,7 @@ namespace IngameScript {
                 Primitive delta = variable.GetValue();
                 if (!increment) delta = delta.Not();
 
-                Variable newValue = new StaticVariable(PROGRAM.GetVariable(variableName).GetValue().Plus(delta));
+                IVariable newValue = new StaticVariable(PROGRAM.GetVariable(variableName).GetValue().Plus(delta));
 
                 if (PROGRAM.GetCurrentThread().threadVariables.ContainsKey(variableName)) {
                     PROGRAM.GetCurrentThread().threadVariables[variableName] = newValue;
@@ -176,10 +176,10 @@ namespace IngameScript {
 
         public class ListVariableAssignmentCommand : Command {
             public ListIndexVariable list;
-            public Variable value;
+            public IVariable value;
             public bool useReference;
 
-            public ListVariableAssignmentCommand(ListIndexVariable listVariable, Variable v, bool reference) {
+            public ListVariableAssignmentCommand(ListIndexVariable listVariable, IVariable v, bool reference) {
                 list = listVariable;
                 value = v;
                 useReference = reference;
@@ -194,7 +194,7 @@ namespace IngameScript {
         public delegate bool ControlFunction(Thread currentThread);
 
         public IInterruptableCommand GetInterrupableCommand(string controlStatement) {
-            IInterruptableCommand breakCommand = GetCurrentThread().GetCurrentCommand<IInterruptableCommand>(command => !(command is ConditionalCommand) || ((ConditionalCommand)command).alwaysEvaluate);
+            IInterruptableCommand breakCommand = GetCurrentThread().GetCurrentCommand<IInterruptableCommand>(command => (command as ConditionalCommand)?.alwaysEvaluate ?? true);
             if (breakCommand == null) throw new Exception("Invalid use of " + controlStatement + " command");
             return breakCommand;
         }
@@ -205,9 +205,9 @@ namespace IngameScript {
         }
 
         public class WaitCommand : Command {
-            public Variable waitInterval;
+            public IVariable waitInterval;
             double remainingWaitTime = -1;
-            public WaitCommand(Variable variable) {
+            public WaitCommand(IVariable variable) {
                 waitInterval = variable;
             }
 
@@ -224,10 +224,10 @@ namespace IngameScript {
         }
 
         public class ListenCommand : Command {
-            public Variable tag;
+            public IVariable tag;
             bool shouldListen;
 
-            public ListenCommand(Variable v, bool listen) {
+            public ListenCommand(IVariable v, bool listen) {
                 tag = v;
                 shouldListen = listen;
             }
@@ -244,9 +244,9 @@ namespace IngameScript {
         }
 
         public class SendCommand : Command {
-            public Variable message, tag;
+            public IVariable message, tag;
 
-            public SendCommand(Variable messageVariable, Variable tagVariable) {
+            public SendCommand(IVariable messageVariable, IVariable tagVariable) {
                 message = messageVariable;
                 tag = tagVariable;
             }
@@ -260,10 +260,10 @@ namespace IngameScript {
         public class NullCommand : Command { public override bool Execute() => true; }
 
         public class BlockCommand : Command {
-            public Selector entityProvider;
+            public ISelector entityProvider;
             public Action<IBlockHandler, Object> blockAction;
 
-            public BlockCommand(Selector provider, Action<IBlockHandler, Object> action) {
+            public BlockCommand(ISelector provider, Action<IBlockHandler, Object> action) {
                 entityProvider = provider;
                 blockAction = action;
             }
@@ -276,11 +276,11 @@ namespace IngameScript {
         }
 
         public class TransferItemCommand : Command {
-            public Selector from;//Must be Inventory
-            public Selector to;//Must be Inventory
-            public Variable first, second;//One of these is an amount (nullable), other must be ItemFilter (non nullable)
+            public ISelector from;//Must be Inventory
+            public ISelector to;//Must be Inventory
+            public IVariable first, second;//One of these is an amount (nullable), other must be ItemFilter (non nullable)
 
-            public TransferItemCommand(Selector source, Selector destination, Variable firstVariable, Variable secondVariable) {
+            public TransferItemCommand(ISelector source, ISelector destination, IVariable firstVariable, IVariable secondVariable) {
                 from = source;
                 to = destination;
                 first = firstVariable;
@@ -293,8 +293,8 @@ namespace IngameScript {
                 var filter = PROGRAM.AnyItem(PROGRAM.GetItemFilters(CastString((second ?? first).GetValue())));
                 var items = NewList<MyInventoryItem>();
 
-                var toInventories = to.GetEntities().Select(i => (IMyInventory)i).Where(i => !i.IsFull).ToList();
-                var fromInventories = from.GetEntities().Select(i => (IMyInventory)i)
+                var toInventories = to.GetEntities().Cast<IMyInventory>().Where(i => !i.IsFull).ToList();
+                var fromInventories = from.GetEntities().Cast<IMyInventory>()
                     .Where(i => toInventories.All(to => i.Owner.EntityId != to.Owner.EntityId)); //Don't transfer to yourself
 
                 MyFixedPoint amountLeft = MyFixedPoint.MaxValue;
@@ -323,11 +323,11 @@ namespace IngameScript {
         }
 
         public class ConditionalCommand : Command, IInterruptableCommand {
-            public Variable condition;
+            public IVariable condition;
             public bool alwaysEvaluate, evaluated, evaluatedValue, isExecuting, shouldBreak;
             public Command conditionMetCommand, conditionNotMetCommand;
 
-            public ConditionalCommand(Variable conditionVariable, Command metCommand, Command notMetCommand, bool alwaysEval) {
+            public ConditionalCommand(IVariable conditionVariable, Command metCommand, Command notMetCommand, bool alwaysEval) {
                 condition = conditionVariable;
                 conditionMetCommand = metCommand;
                 conditionNotMetCommand = notMetCommand;
@@ -385,14 +385,14 @@ namespace IngameScript {
 
         public class MultiActionCommand : Command {
             public List<Command> commandsToExecute, currentCommands = null;
-            public Variable loopCount;
+            public IVariable loopCount;
             int loopsLeft;
 
             public MultiActionCommand(List<Command> commandsToExecute, int loops = 1) : this(commandsToExecute, new StaticVariable(ResolvePrimitive(loops))) {
 
             }
 
-            public MultiActionCommand(List<Command> commands, Variable loops) {
+            public MultiActionCommand(List<Command> commands, IVariable loops) {
                 commandsToExecute = commands;
                 loopCount = loops;
             }
@@ -427,19 +427,19 @@ namespace IngameScript {
 
         public class ForEachCommand : Command, IInterruptableCommand {
             public string iterator;
-            public Variable list;
+            public IVariable list;
             public Command command;
-            List<Variable> listElements = null;
+            List<IVariable> listElements = null;
             bool executed = true;
 
-            public ForEachCommand(string Iterator, Variable List, Command Command) {
+            public ForEachCommand(string Iterator, IVariable List, Command Command) {
                 iterator = Iterator;
                 list = List;
                 command = Command;
             }
 
             public override bool Execute() {
-                if (listElements == null) listElements = CastList(list.GetValue()).GetValues();
+                listElements = listElements ?? CastList(list.GetValue()).GetValues().ToList();
 
                 if (executed && listElements.Count == 0) return true;
 
@@ -467,7 +467,7 @@ namespace IngameScript {
 
             public void Break() {
                 executed = true;
-                listElements = NewList<Variable>();
+                listElements = NewList<IVariable>();
                 command.Reset();
             }
 

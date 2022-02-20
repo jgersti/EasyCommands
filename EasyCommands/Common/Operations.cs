@@ -76,7 +76,7 @@ namespace IngameScript {
             AddBiOperation<object, KeyedList>(BiOperand.ADD, (a, b) => Combine(a, b));
             AddBiOperation<KeyedList, object>(BiOperand.SUBTRACT, (a, b) => a.Remove(CastList(ResolvePrimitive(b))));
             AddBiOperation<float, float>(BiOperand.RANGE, (a, b) => {
-                var range = Enumerable.Range((int)Math.Min(a, b), (int)(Math.Abs(b - a) + 1)).Select(i => GetStaticVariable(i));
+                var range = Range((int)Math.Min(a, b), (int)(Math.Abs(b - a) + 1)).Select(i => GetStaticVariable(i));
                 if (a > b) range = range.Reverse();
                 return NewKeyedList(range);
             });
@@ -172,7 +172,6 @@ namespace IngameScript {
             AddBiOperation<Color, float>(BiOperand.DIVIDE, (a, b) => Color.Multiply(a, 1/b));
         }
 
-        static List<Variable> GetVariables(params object[] o) => o.ToList().Select(p => GetStaticVariable(p)).ToList();
         static KeyedList Combine(object a, object b) => CastList(ResolvePrimitive(a)).Combine(CastList(ResolvePrimitive(b)));
     }
 }
