@@ -20,7 +20,7 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
         public delegate object GetTerminalPropertyValue(ITerminalProperty property, IMyTerminalBlock block);
-        public delegate void SetTerminalPropertyValue(ITerminalProperty property, IMyTerminalBlock blockd, Primitive value);
+        public delegate void SetTerminalPropertyValue(ITerminalProperty property, IMyTerminalBlock block, Primitive value);
 
         public class TerminalPropertyConverter {
             public GetTerminalPropertyValue GetValue;

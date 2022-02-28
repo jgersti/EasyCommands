@@ -46,7 +46,7 @@ namespace IngameScript {
 
                         while (alternateBranches.Count > 0) {
                             finalParameters = alternateBranches[0];
-                            alternateBranches.AddRange(PROGRAM.ProcessParameters(finalParameters));
+                            alternateBranches.AddRange(ProcessingRules.ProcessParameters(finalParameters));
                             alternateBranches.RemoveAt(0);
                             if (finalParameters.Count == 1) break;
                         }
@@ -90,7 +90,7 @@ namespace IngameScript {
 
             IVariable ParseVariable(List<ICommandParameter> p, int startIndex, int endIndex) {
                 var range = p.GetRange(startIndex + 1, endIndex - (startIndex + 1));
-                var variable = PROGRAM.ParseParameters<ValueCommandParameter<IVariable>>(range);
+                var variable = ProcessingRules.ParseParameters<ValueCommandParameter<IVariable>>(range);
                 if (variable == null) throw new Exception("List Index Values Must Resolve To a Variable");
                 return variable.value;
             }
@@ -105,8 +105,8 @@ namespace IngameScript {
             }
         }
 
-        class BranchingProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
-            List<ParameterProcessor<T>> processors;
+        public class BranchingProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
+            public List<ParameterProcessor<T>> processors;
 
             public BranchingProcessor(params ParameterProcessor<T>[] p) {
                 processors = NewList(p);
@@ -193,6 +193,7 @@ namespace IngameScript {
             return new RuleProcessor<SelectorCommandParameter>(processors, canConvert, convert);
         }
 
+        // this no rule
         static ICommandParameter ConvertConditionalCommand(ConditionCommandParameter condition, CommandReferenceParameter metFetcher, ElseCommandParameter otherwise, CommandReferenceParameter notMetFetcher) {
             Command metCommand = metFetcher.value;
             Command notMetCommand = otherwise != null ? notMetFetcher.value : new NullCommand();
@@ -205,10 +206,10 @@ namespace IngameScript {
         }
 
         //Rule Processors
-        class RuleProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
-            List<IDataProcessor> processors;
-            CanConvert<T> canConvert;
-            Convert<T> convert;
+        public class RuleProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
+            public List<IDataProcessor> processors;
+            public CanConvert<T> canConvert;
+            public Convert<T> convert;
 
             public RuleProcessor(List<IDataProcessor> proc, CanConvert<T> canConv, Convert<T> conv) {
                 processors = proc;
@@ -278,13 +279,13 @@ namespace IngameScript {
             new RuleProcessor<T>(NewList<IDataProcessor>(u, v, w, x), p => canConvert(p, u, v, w, x), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
 
         //Utility delegates to efficiently create Rule Processors
-        delegate bool CanConvert<T>(T t);
+        public delegate bool CanConvert<T>(T t);
         delegate bool OneValueCanConvert<T, U>(T t, DataProcessor<U> a);
         delegate bool TwoValueCanConvert<T, U, V>(T t, DataProcessor<U> a, DataProcessor<V> b);
         delegate bool ThreeValueCanConvert<T, U, V, W>(T t, DataProcessor<U> a, DataProcessor<V> b, DataProcessor<W> c);
         delegate bool FourValueCanConvert<T, U, V, W, X>(T t, DataProcessor<U> a, DataProcessor<V> b, DataProcessor<W> c, DataProcessor<X> d);
 
-        delegate object Convert<T>(T t);
+        public delegate object Convert<T>(T t);
         delegate object OneValueConvert<T, U>(T t, U a);
         delegate object TwoValueConvert<T, U, V>(T t, U a, V b);
         delegate object ThreeValueConvert<T, U, V, W>(T t, U a, V b, W c);

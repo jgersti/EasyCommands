@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyCommands.Tests", "EasyC
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "docs", "docs\docs.shproj", "{CE8C102D-3998-414C-990D-92D4A2EDF4CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyCommands.Utilities", "EasyCommands.Utilities\EasyCommands.Utilities.csproj", "{235903ED-6B2E-414B-B515-8C764E8035EB}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		docs\docs.projitems*{ce8c102d-3998-414c-990d-92d4a2edf4ce}*SharedItemsImports = 13
@@ -32,6 +34,10 @@ Global
 		{E11779CC-F7DF-416C-8932-8012F3B681EB}.Debug|Any CPU.Build.0 = Debug|x64
 		{E11779CC-F7DF-416C-8932-8012F3B681EB}.Release|Any CPU.ActiveCfg = Release|x64
 		{E11779CC-F7DF-416C-8932-8012F3B681EB}.Release|Any CPU.Build.0 = Release|x64
+		{235903ED-6B2E-414B-B515-8C764E8035EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{235903ED-6B2E-414B-B515-8C764E8035EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{235903ED-6B2E-414B-B515-8C764E8035EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{235903ED-6B2E-414B-B515-8C764E8035EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
