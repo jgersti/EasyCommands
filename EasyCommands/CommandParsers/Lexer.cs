@@ -366,14 +366,14 @@ namespace IngameScript {
                     PropertyWords.Add(word, commandParameters.ToList());
             }
 
-            public static List<IToken> Lex(List<Lexeme> lexemes) => lexemes.SelectMany(t => Lex(t)).ToList();
+            public static List<IToken> GetTokens(string input) => Tokenize(input).SelectMany(Match).ToList();
 
-            public static List<IToken> Lex(Lexeme lexeme) {
+            public static List<IToken> Match(Lexeme lexeme) {
                 var tokens = NewList<IToken>();
                 if (lexeme.isExplicit)
                     tokens.Add(new VariableToken(GetStaticVariable(lexeme.original)));
                 else if (lexeme.isString)
-                    tokens.Add(new AmbiguousStringToken(lexeme.original, false, Lex(Tokenize(lexeme.lexeme)).ToArray()));
+                    tokens.Add(new AmbiguousStringToken(lexeme.original, false, GetTokens(lexeme.lexeme).ToArray()));
                 else if (PropertyWords.ContainsKey(lexeme.lexeme))
                     tokens.AddList(PropertyWords[lexeme.lexeme]);
                 else //If no property matches, must be a string
@@ -384,7 +384,7 @@ namespace IngameScript {
             }
 
             delegate IEnumerable<string> Pass(string s);
-            public static List<Lexeme> Tokenize(string commandString) {
+            public static IEnumerable<Lexeme> Tokenize(string commandString) {
                 Pass thirdPass = v => SeperatorPass(v, thirdPassSeperators);
                 Pass secondPass = v => SeperatorPass(v, secondPassSeperators, w => PrimitivePass(w, thirdPass));
                 Pass firstPass = v => SeperatorPass(v, firstPassSeperators, w => PrimitivePass(w, secondPass));
@@ -395,8 +395,7 @@ namespace IngameScript {
                     u => u.Replace(" : ", " :: ")
                         .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
                         .SelectMany(v => firstPass(v))
-                        .Select(v => new Lexeme(v, false, false)))
-                .ToList();
+                        .Select(v => new Lexeme(v, false, false)));
             }
 
             static IEnumerable<Lexeme> TokenizeEnclosed(string token, string characters, Func<string, IEnumerable<Lexeme>> parseSubTokens) =>

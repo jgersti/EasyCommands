@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using Malware.MDKUtilities;
 using IngameScript;
 using static IngameScript.Program;
@@ -9,7 +10,7 @@ namespace EasyCommands.Tests.TokenizeTests {
     public class ParenthesisTests : ForceLocale {
         [TestMethod]
         public void TestBasicParenthesis() {
-            var tokens = Lexer.Tokenize("test ( string )");
+            var tokens = Lexer.Tokenize("test ( string )").ToList();
             Assert.AreEqual(4, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -19,7 +20,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestParenthesesMissingSpaces() {
-            var tokens = Lexer.Tokenize("test (string) there");
+            var tokens = Lexer.Tokenize("test (string) there").ToList();
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -30,7 +31,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceBeforeOpeningParenthesis() {
-            var tokens = Lexer.Tokenize("test (string )there");
+            var tokens = Lexer.Tokenize("test (string )there").ToList();
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -41,7 +42,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceAfterClosingParenthesis() {
-            var tokens = Lexer.Tokenize("test( string ) there");
+            var tokens = Lexer.Tokenize("test( string ) there").ToList();
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -52,7 +53,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestEmbeddedParenthesesMissingSpaces() {
-            var tokens = Lexer.Tokenize("test ((string) there)");
+            var tokens = Lexer.Tokenize("test ((string) there)").ToList();
             Assert.AreEqual(7, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);

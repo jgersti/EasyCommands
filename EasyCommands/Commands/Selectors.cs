@@ -91,7 +91,7 @@ namespace IngameScript {
             }
 
             Block ResolveType(String selector, out bool isGroup) {
-                var parameters = Lexer.Lex(Lexer.Tokenize(selector));
+                var parameters = Lexer.GetTokens(selector);
                 var blockType = findLast<BlockTypeToken>(parameters);
                 isGroup = findLast<GroupToken>(parameters) != null;
                 if (blockType == null) throw new Exception("Cannot parse block type from selector: " + selector);

@@ -42,7 +42,7 @@ namespace IngameScript {
 
                 var functionIndices = Range(0, commandStrings.Count).Where(i => commandStrings[i].StartsWith(":")).Reverse();
                 foreach (int i in functionIndices) {
-                    var nameAndParams = Lexer.Tokenize(commandStrings[i].Remove(0, 1).Trim());
+                    var nameAndParams = Lexer.Tokenize(commandStrings[i].Remove(0, 1).Trim()).ToList();
                     var functionName = nameAndParams[0].original;
 
                     functions[functionName] = new FunctionDefinition(functionName, nameAndParams.Skip(1).Select(t => t.original).ToList());
@@ -150,7 +150,7 @@ namespace IngameScript {
         }
 
         public Command ParseCommand(String commandLine, int lineNumber = 0) =>
-            ParseCommand(Lexer.Lex(Lexer.Tokenize(commandLine)), lineNumber);
+            ParseCommand(Lexer.GetTokens(commandLine), lineNumber);
 
         Command ParseCommand(List<IToken> parameters, int lineNumber) {
             CommandToken command = Parser.ParseParameters<CommandToken>(parameters);
@@ -165,7 +165,7 @@ namespace IngameScript {
 
             public CommandLine(String command, int line) {
                 depth = command.TakeWhile(Char.IsWhiteSpace).Count();
-                commandParameters = Lexer.Lex(Lexer.Tokenize(command));
+                commandParameters = Lexer.GetTokens(command);
                 lineNumber = line;
             }
         }
