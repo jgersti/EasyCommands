@@ -191,8 +191,8 @@ namespace IngameScript {
 
         public delegate bool ControlFunction(Thread currentThread);
 
-        public IInterruptableCommand GetInterrupableCommand(string controlStatement) {
-            IInterruptableCommand breakCommand = GetCurrentThread().GetCurrentCommand<IInterruptableCommand>(command => (command as ConditionalCommand)?.alwaysEvaluate ?? true);
+        public static IInterruptableCommand GetInterrupableCommand(Thread thread, string controlStatement) {
+            IInterruptableCommand breakCommand = thread.GetCurrentCommand<IInterruptableCommand>(command => (command as ConditionalCommand)?.alwaysEvaluate ?? true);
             if (breakCommand == null) throw new Exception("Invalid use of " + controlStatement + " command");
             return breakCommand;
         }

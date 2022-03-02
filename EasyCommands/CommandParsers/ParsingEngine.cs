@@ -42,7 +42,7 @@ namespace IngameScript {
 
                 var functionIndices = Range(0, commandStrings.Count).Where(i => commandStrings[i].StartsWith(":")).Reverse();
                 foreach (int i in functionIndices) {
-                    var nameAndParams = Tokenize(commandStrings[i].Remove(0, 1).Trim());
+                    var nameAndParams = Lexer.Tokenize(commandStrings[i].Remove(0, 1).Trim());
                     var functionName = nameAndParams[0].original;
 
                     functions[functionName] = new FunctionDefinition(functionName, nameAndParams.Skip(1).Select(t => t.original).ToList());
@@ -122,14 +122,14 @@ namespace IngameScript {
                     CommandLine next = commandStrings[index + 1];
                     if (current.depth > next.depth) break; //End, break
                     if (current.depth < next.depth) { //I'm a parent of next line
-                        PROGRAM.parsingTasks.Insert(0, new ParseCommmandTask(commandStrings, index + 1, true, myCommand => current.commandParameters.Add(new CommandReferenceParameter(myCommand))).GetTask());
+                        PROGRAM.parsingTasks.Insert(0, new ParseCommmandTask(commandStrings, index + 1, true, myCommand => current.commandParameters.Add(new CommandToken(myCommand))).GetTask());
                         return false;
                     }
-                    if (next.commandParameters.Count > 0 && next.commandParameters[0] is ElseCommandParameter) {//Handle Otherwise
+                    if (next.commandParameters.Count > 0 && next.commandParameters[0] is ElseToken) {//Handle Otherwise
                         current.commandParameters.Add(next.commandParameters[0]);
                         next.commandParameters.RemoveAt(0);
                         PROGRAM.parsingTasks.Insert(0, new ParseCommmandTask(commandStrings, index + 1, false, myCommand => {
-                            current.commandParameters.Add(new CommandReferenceParameter(myCommand));
+                            current.commandParameters.Add(new CommandToken(myCommand));
                         }).GetTask());
                         return false;
                     }
@@ -150,10 +150,10 @@ namespace IngameScript {
         }
 
         public Command ParseCommand(String commandLine, int lineNumber = 0) =>
-            ParseCommand(ParseCommandParameters(Tokenize(commandLine)), lineNumber);
+            ParseCommand(Lexer.Lex(Lexer.Tokenize(commandLine)), lineNumber);
 
-        Command ParseCommand(List<ICommandParameter> parameters, int lineNumber) {
-            CommandReferenceParameter command = ProcessingRules.ParseParameters<CommandReferenceParameter>(parameters);
+        Command ParseCommand(List<IToken> parameters, int lineNumber) {
+            CommandToken command = Parser.ParseParameters<CommandToken>(parameters);
 
             if (command == null) throw new Exception("Unable to parse command from command parameters at line number: " + lineNumber);
             return command.value;
@@ -161,11 +161,11 @@ namespace IngameScript {
 
         public class CommandLine {
             public int depth, lineNumber;
-            public List<ICommandParameter> commandParameters;
+            public List<IToken> commandParameters;
 
             public CommandLine(String command, int line) {
                 depth = command.TakeWhile(Char.IsWhiteSpace).Count();
-                commandParameters = PROGRAM.ParseCommandParameters(PROGRAM.Tokenize(command));
+                commandParameters = Lexer.Lex(Lexer.Tokenize(command));
                 lineNumber = line;
             }
         }

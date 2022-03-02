@@ -2,6 +2,7 @@
 using System;
 using Malware.MDKUtilities;
 using IngameScript;
+using static IngameScript.Program;
 
 namespace EasyCommands.Tests.TokenizeTests {
     [TestClass]
@@ -32,8 +33,7 @@ namespace EasyCommands.Tests.TokenizeTests {
         }
 
         void VerifyTokensSplit(string token) {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("assign a to 2.0" + token + ".5");
+            var tokens = Lexer.Tokenize("assign a to 2.0" + token + ".5");
             Assert.AreEqual(6, tokens.Count);
             Assert.AreEqual("assign", tokens[0].original);
             Assert.AreEqual("a", tokens[1].original);

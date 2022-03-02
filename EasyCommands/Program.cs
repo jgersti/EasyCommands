@@ -110,7 +110,6 @@ namespace IngameScript {
 
         public Program() {
             PROGRAM = this;
-            InitializeParsers();
             InitializeOperators();
             InitializeItems();
             Runtime.UpdateFrequency = updateFrequency;

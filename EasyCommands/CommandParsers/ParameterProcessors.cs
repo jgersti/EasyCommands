@@ -23,38 +23,38 @@ namespace IngameScript {
         public interface IParameterProcessor : IComparable<IParameterProcessor> {
             int Rank { get; set; }
             Type GetProcessedTypes();
-            bool CanProcess(ICommandParameter p);
-            bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches);
+            bool CanProcess(IToken p);
+            bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches);
         }
 
-        public abstract class ParameterProcessor<T> : IParameterProcessor where T : class, ICommandParameter {
+        public abstract class ParameterProcessor<T> : IParameterProcessor where T : class, IToken {
             public int Rank { get; set; }
             public virtual Type GetProcessedTypes() => typeof(T);
             public int CompareTo(IParameterProcessor other) => Rank.CompareTo(other.Rank);
-            public bool CanProcess(ICommandParameter p) => p is T;
-            public abstract bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches);
+            public bool CanProcess(IToken p) => p is T;
+            public abstract bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches);
         }
 
-        public class ParenthesisProcessor : ParameterProcessor<OpenParenthesisCommandParameter> {
-            public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
+        public class ParenthesisProcessor : ParameterProcessor<OpenParenthesisToken> {
+            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
                 for (int j = i + 1; j < p.Count; j++) {
-                    if (p[j] is OpenParenthesisCommandParameter) return false;
-                    else if (p[j] is CloseParenthesisCommandParameter) {
+                    if (p[j] is OpenParenthesisToken) return false;
+                    else if (p[j] is CloseParenthesisToken) {
                         var alternateBranches = NewList(p.GetRange(i + 1, j - (i + 1)));
                         p.RemoveRange(i, j - i + 1);
 
                         while (alternateBranches.Count > 0) {
                             finalParameters = alternateBranches[0];
-                            alternateBranches.AddRange(ProcessingRules.ProcessParameters(finalParameters));
+                            alternateBranches.AddRange(Parser.ApplyRules(finalParameters));
                             alternateBranches.RemoveAt(0);
                             if (finalParameters.Count == 1) break;
                         }
 
                         foreach (var branch in alternateBranches) {
-                            branch.Insert(0, new OpenParenthesisCommandParameter());
-                            branch.Add(new CloseParenthesisCommandParameter());
-                            var copy = new List<ICommandParameter>(p);
+                            branch.Insert(0, new OpenParenthesisToken());
+                            branch.Add(new CloseParenthesisToken());
+                            var copy = new List<IToken>(p);
                             copy.InsertRange(i, branch);
                             branches.Add(copy);
                         }
@@ -67,19 +67,19 @@ namespace IngameScript {
             }
         }
 
-        public class ListProcessor : ParameterProcessor<OpenBracketCommandParameter> {
-            public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
+        public class ListProcessor : ParameterProcessor<OpenBracketToken> {
+            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
                 var indexValues = NewList<IVariable>();
                 int startIndex = i;
                 for (int j = startIndex + 1; j < p.Count; j++) {
-                    if (p[j] is OpenBracketCommandParameter) return false;
-                    else if (p[j] is ListSeparatorCommandParameter) {
+                    if (p[j] is OpenBracketToken) return false;
+                    else if (p[j] is ListSeparatorToken) {
                         indexValues.Add(ParseVariable(p, startIndex, j));
                         startIndex = j; //set startIndex to next separator
-                    } else if (p[j] is CloseBracketCommandParameter) {
+                    } else if (p[j] is CloseBracketToken) {
                         if (j > i + 1) indexValues.Add(ParseVariable(p, startIndex, j)); //dont try to parse []
-                        finalParameters = NewList<ICommandParameter>(new ListCommandParameter(GetStaticVariable(NewKeyedList(indexValues))));
+                        finalParameters = NewList<IToken>(new ListToken(GetStaticVariable(NewKeyedList(indexValues))));
                         p.RemoveRange(i, j - i + 1);
                         p.InsertRange(i, finalParameters);
                         return true;
@@ -88,40 +88,40 @@ namespace IngameScript {
                 throw new Exception("Missing Closing Bracket for List");
             }
 
-            IVariable ParseVariable(List<ICommandParameter> p, int startIndex, int endIndex) {
+            IVariable ParseVariable(List<IToken> p, int startIndex, int endIndex) {
                 var range = p.GetRange(startIndex + 1, endIndex - (startIndex + 1));
-                var variable = ProcessingRules.ParseParameters<ValueCommandParameter<IVariable>>(range);
+                var variable = Parser.ParseParameters<ValueToken<IVariable>>(range);
                 if (variable == null) throw new Exception("List Index Values Must Resolve To a Variable");
                 return variable.value;
             }
         }
 
-        public class MultiListProcessor : ParameterProcessor<ListCommandParameter> {
-            public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
-                while (i > 1 && p[i - 1] is ListCommandParameter) i--;
-                finalParameters = NewList<ICommandParameter>(new ListIndexCommandParameter(new ListIndexVariable(((ListCommandParameter)p[i]).value, EmptyList())));
+        public class MultiListProcessor : ParameterProcessor<ListToken> {
+            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
+                while (i > 1 && p[i - 1] is ListToken) i--;
+                finalParameters = NewList<IToken>(new ListIndexToken(new ListIndexVariable(((ListToken)p[i]).value, EmptyList())));
                 p[i] = finalParameters[0];
                 return true;
             }
         }
 
-        public class BranchingProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
+        public class BranchingProcessor<T> : ParameterProcessor<T> where T : class, IToken {
             public List<ParameterProcessor<T>> processors;
 
             public BranchingProcessor(params ParameterProcessor<T>[] p) {
                 processors = NewList(p);
             }
 
-            public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
+            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
                 var eligibleProcessors = processors.Where(processor => processor.CanProcess(p[i])).ToList();
-                var copy = new List<ICommandParameter>(p);
+                var copy = new List<IToken>(p);
 
                 bool processed = false;
                 foreach (IParameterProcessor processor in eligibleProcessors) {
                     if (processed) {
-                        List<ICommandParameter> ignored;
-                        var additionalCopy = new List<ICommandParameter>(copy);
+                        List<IToken> ignored;
+                        var additionalCopy = new List<IToken>(copy);
                         if (processor.Process(additionalCopy, i, out ignored, branches)) {
                             branches.Insert(0, additionalCopy);
                         }
@@ -133,21 +133,21 @@ namespace IngameScript {
             }
         }
 
-        static RuleProcessor<BiOperandCommandParameter> BiOperandProcessor(int tier) =>
-            TwoValueRule(Type<BiOperandCommandParameter>, requiredLeft<VariableCommandParameter>(), requiredRight<VariableCommandParameter>(),
+        static RuleProcessor<BinaryOperandToken> BiOperandProcessor(int tier) =>
+            TwoValueRule(Type<BinaryOperandToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                 (operand, left, right) => operand.tier == tier && AllSatisfied(left, right),
-                (operand, left, right) => new VariableCommandParameter(new BiOperandVariable(operand.value, left.value, right.value)));
+                (operand, left, right) => new VariableToken(new BiOperandVariable(operand.value, left.value, right.value)));
 
-        static RuleProcessor<SelectorCommandParameter> BlockCommandProcessor() {
-            var assignmentProcessor = eitherList<AssignmentCommandParameter>(true);
-            var increaseProcessor = requiredLeft<IncreaseCommandParameter>();
-            var incrementProcessor = requiredRight<IncrementCommandParameter>();
-            var variableProcessor = requiredEither<VariableCommandParameter>();
-            var propertyProcessor = requiredEither<PropertySupplierCommandParameter>();
-            var directionProcessor = requiredEither<DirectionCommandParameter>();
-            var reverseProcessor = requiredEither<ReverseCommandParameter>();
-            var notProcessor = requiredEither<NotCommandParameter>();
-            var relativeProcessor = requiredRight<RelativeCommandParameter>();
+        static RuleProcessor<SelectorToken> BlockCommandProcessor() {
+            var assignmentProcessor = eitherList<AssignmentToken>(true);
+            var increaseProcessor = requiredLeft<IncreaseToken>();
+            var incrementProcessor = requiredRight<IncrementToken>();
+            var variableProcessor = requiredEither<VariableToken>();
+            var propertyProcessor = requiredEither<PropertySupplierToken>();
+            var directionProcessor = requiredEither<DirectionToken>();
+            var reverseProcessor = requiredEither<ReverseToken>();
+            var notProcessor = requiredEither<NotToken>();
+            var relativeProcessor = requiredRight<RelativeToken>();
             var processors = NewList<IDataProcessor>(
                 assignmentProcessor,
                 increaseProcessor,
@@ -159,8 +159,8 @@ namespace IngameScript {
                 notProcessor,
                 relativeProcessor);
 
-            CanConvert<SelectorCommandParameter> canConvert = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
-            Convert<SelectorCommandParameter> convert = p => {
+            CanConvert<SelectorToken> canConvert = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
+            Convert<SelectorToken> convert = p => {
                 PropertySupplier propertySupplier = propertyProcessor.Satisfied() ? propertyProcessor.GetValue().value : new PropertySupplier();
                 if (directionProcessor.Satisfied()) propertySupplier = propertySupplier.WithDirection(directionProcessor.GetValue().value);
 
@@ -171,7 +171,7 @@ namespace IngameScript {
                 }
 
                 if (notProcessor.Satisfied()) {
-                    variableValue = new UniOperandVariable(UniOperand.REVERSE, variableValue);
+                    variableValue = new UniOperandVariable(UnaryOperator.REVERSE, variableValue);
                     propertySupplier = propertySupplier.WithPropertyValue(variableValue);
                 }
 
@@ -187,14 +187,14 @@ namespace IngameScript {
                 else if (AllSatisfied(directionProcessor)) blockAction = (b, e) => b.UpdatePropertyValue(e, propertySupplier.Resolve(b));
                 else blockAction = (b, e) => b.UpdatePropertyValue(e, propertySupplier.WithPropertyValue(variableValue).Resolve(b));
 
-                return new CommandReferenceParameter(new BlockCommand(p.value, blockAction));
+                return new CommandToken(new BlockCommand(p.value, blockAction));
             };
 
-            return new RuleProcessor<SelectorCommandParameter>(processors, canConvert, convert);
+            return new RuleProcessor<SelectorToken>(processors, canConvert, convert);
         }
 
         // this no rule
-        static ICommandParameter ConvertConditionalCommand(ConditionCommandParameter condition, CommandReferenceParameter metFetcher, ElseCommandParameter otherwise, CommandReferenceParameter notMetFetcher) {
+        static IToken ConvertConditionalCommand(ConditionToken condition, CommandToken metFetcher, ElseToken otherwise, CommandToken notMetFetcher) {
             Command metCommand = metFetcher.value;
             Command notMetCommand = otherwise != null ? notMetFetcher.value : new NullCommand();
             if (condition.swapCommands) {
@@ -202,11 +202,11 @@ namespace IngameScript {
                 metCommand = notMetCommand;
                 notMetCommand = temp;
             }
-            return new CommandReferenceParameter(new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate));
+            return new CommandToken(new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate));
         }
 
         //Rule Processors
-        public class RuleProcessor<T> : ParameterProcessor<T> where T : class, ICommandParameter {
+        public class RuleProcessor<T> : ParameterProcessor<T> where T : class, IToken {
             public List<IDataProcessor> processors;
             public CanConvert<T> canConvert;
             public Convert<T> convert;
@@ -217,7 +217,7 @@ namespace IngameScript {
                 convert = conv;
             }
 
-            public override bool Process(List<ICommandParameter> p, int i, out List<ICommandParameter> finalParameters, List<List<ICommandParameter>> branches) {
+            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
                 processors.ForEach(dp => dp.Clear());
                 int j = i + 1;
@@ -239,43 +239,43 @@ namespace IngameScript {
                 var converted = convert(hook);
 
                 p.RemoveRange(k, j - k);
-                if (converted is ICommandParameter) {
-                    finalParameters = NewList((ICommandParameter)converted);
-                } else if (converted is List<ICommandParameter>) {
-                    finalParameters = (List<ICommandParameter>)converted;
+                if (converted is IToken) {
+                    finalParameters = NewList((IToken)converted);
+                } else if (converted is List<IToken>) {
+                    finalParameters = (List<IToken>)converted;
                 } else throw new Exception("Final parameters must be CommandParameter");
                 p.InsertRange(k, finalParameters);
                 return true;
             }
         }
 
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Convert<T> convert) where T : class, ICommandParameter => NoValueRule(type, p => true, convert);
+        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Convert<T> convert) where T : class, IToken => NoValueRule(type, p => true, convert);
 
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, CanConvert<T> canConvert, Convert<T> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, CanConvert<T> canConvert, Convert<T> convert) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IDataProcessor>(), canConvert, convert);
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueConvert<T, U> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueConvert<T, U> convert) where T : class, IToken =>
             OneValueRule(type, u, (p, a) => a.Satisfied(), convert);
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueCanConvert<T, U> canConvert, OneValueConvert<T, U> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueCanConvert<T, U> canConvert, OneValueConvert<T, U> convert) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IDataProcessor>(u), p => canConvert(p, u), p => convert(p, u.GetValue()));
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueConvert<T, U, V> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
             TwoValueRule(type, u, v, (p, a, b) => AllSatisfied(a, b), convert);
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueCanConvert<T, U, V> canConvert, TwoValueConvert<T, U, V> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueCanConvert<T, U, V> canConvert, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IDataProcessor>(u, v), p => canConvert(p, u, v), p => convert(p, u.GetValue(), v.GetValue()));
 
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueConvert<T, U, V, W> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
             ThreeValueRule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), convert);
 
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueCanConvert<T, U, V, W> canConvert, ThreeValueConvert<T, U, V, W> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueCanConvert<T, U, V, W> canConvert, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IDataProcessor>(u, v, w), p => canConvert(p, u, v, w), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue()));
 
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueConvert<T, U, V, W, X> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
             FourValueRule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), convert);
 
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueCanConvert<T, U, V, W, X> canConvert, FourValueConvert<T, U, V, W, X> convert) where T : class, ICommandParameter =>
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueCanConvert<T, U, V, W, X> canConvert, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IDataProcessor>(u, v, w, x), p => canConvert(p, u, v, w, x), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
 
         //Utility delegates to efficiently create Rule Processors

@@ -29,26 +29,58 @@ namespace IngameScript {
                 value = v;
             }
 
-            public Primitive Plus(Primitive p) => PROGRAM.PerformOperation(BiOperand.ADD, this, p);
-            public Primitive Minus(Primitive p) => PROGRAM.PerformOperation(BiOperand.SUBTRACT, this, p);
-            public Primitive Multiply(Primitive p) => PROGRAM.PerformOperation(BiOperand.MULTIPLY, this, p);
-            public Primitive Divide(Primitive p) => PROGRAM.PerformOperation(BiOperand.DIVIDE, this, p);
-            public int CompareTo(Primitive p) => Convert.ToInt32(CastNumber(PROGRAM.PerformOperation(BiOperand.COMPARE, this, p)));
-            public Primitive Not() => PROGRAM.PerformOperation(UniOperand.REVERSE, this);
+            public Primitive Plus(Primitive p) => PROGRAM.PerformOperation(BinaryOperator.ADD, this, p);
+            public Primitive Minus(Primitive p) => PROGRAM.PerformOperation(BinaryOperator.SUBTRACT, this, p);
+            public Primitive Multiply(Primitive p) => PROGRAM.PerformOperation(BinaryOperator.MULTIPLY, this, p);
+            public Primitive Divide(Primitive p) => PROGRAM.PerformOperation(BinaryOperator.DIVIDE, this, p);
+            public int CompareTo(Primitive p) => Convert.ToInt32(CastNumber(PROGRAM.PerformOperation(BinaryOperator.COMPARE, this, p)));
+            public Primitive Not() => PROGRAM.PerformOperation(UnaryOperator.REVERSE, this);
             public Primitive DeepCopy() => ResolvePrimitive((value as KeyedList)?.DeepCopy() ?? value);
+
+            public static bool TryParse(String value, out Primitive primitive) {
+                primitive = null;
+                bool boolean;
+                double numeric;
+                var vector = GetVector(value);
+                var color = GetColor(value);
+                if (bool.TryParse(value, out boolean)) primitive = ResolvePrimitive(boolean);
+                if (double.TryParse(value, out numeric)) primitive = ResolvePrimitive(numeric);
+                if (vector.HasValue) primitive = ResolvePrimitive(vector.Value);
+                if (color.HasValue) primitive = ResolvePrimitive(color.Value);
+                return primitive != null;
+            }
         }
 
         delegate Object Converter(Primitive p);
         static KeyValuePair<T, Converter> CastFunction<T>(T r, Converter func) => KeyValuePair(r, func);
-        static Converter Failure(Return returnType) => p => { throw new Exception("Cannot convert " + PROGRAM.returnToString[p.returnType] + " " + CastString(p) + " to " + PROGRAM.returnToString[returnType]); };
+        static Converter Failure(Return returnType) => p => { throw new Exception("Cannot convert " + ReturnToString[p.returnType] + " " + CastString(p) + " to " + ReturnToString[returnType]); };
 
-        static Dictionary<Type, Dictionary<Return, Converter>> castFunctions = NewDictionary(
+        static readonly Dictionary<Return, string> ReturnToString = NewDictionary(
+                KeyValuePair(Return.BOOLEAN, "boolean"),
+                KeyValuePair(Return.NUMERIC, "number"),
+                KeyValuePair(Return.STRING, "string"),
+                KeyValuePair(Return.VECTOR, "vector"),
+                KeyValuePair(Return.COLOR, "color"),
+                KeyValuePair(Return.LIST, "list")
+            );
+
+        static readonly Dictionary<string, Converter> CastMap = NewDictionary(
+                CastFunction("bool", p => CastBoolean(p)),
+                CastFunction("boolean", p => CastBoolean(p)),
+                CastFunction("string", CastString),
+                CastFunction("number", p => CastNumber(p)),
+                CastFunction("vector", p => CastVector(p)),
+                CastFunction("color", p => CastColor(p)),
+                CastFunction("list", CastList)
+            );
+
+        static Dictionary<Type, Dictionary<Return, Converter>> CastFunctions = NewDictionary(
             KeyValuePair(typeof(bool), NewDictionary(
                 CastFunction(Return.BOOLEAN, p => p.value),
                 CastFunction(Return.NUMERIC, p => CastNumber(p) != 0),
                 CastFunction(Return.STRING, p => {
                     Primitive primitive;
-                    return ParsePrimitive(CastString(p), out primitive) && CastBoolean(primitive);
+                    return Primitive.TryParse(CastString(p), out primitive) && CastBoolean(primitive);
                 }),
                 CastFunction(Return.DEFAULT, Failure(Return.BOOLEAN))
             )),
@@ -103,7 +135,7 @@ namespace IngameScript {
 
         public static Primitive ResolvePrimitive(object o) => new Primitive(PrimitiveTypeMap[o.GetType()], (o is double || o is int) ? Convert.ToSingle(o) : o);
 
-        public static T Cast<T>(Primitive p) => (T)castFunctions[typeof(T)].GetValueOrDefault(p.returnType, castFunctions[typeof(T)][Return.DEFAULT])(p);
+        public static T Cast<T>(Primitive p) => (T)CastFunctions[typeof(T)].GetValueOrDefault(p.returnType, CastFunctions[typeof(T)][Return.DEFAULT])(p);
 
         public static bool CastBoolean(Primitive p) => Cast<bool>(p);
         public static float CastNumber(Primitive p) => Cast<float>(p);
@@ -112,10 +144,20 @@ namespace IngameScript {
         public static Color CastColor(Primitive p) => Cast<Color>(p);
         public static KeyedList CastList(Primitive p) => Cast<KeyedList>(p);
 
+        static readonly Dictionary<string, Color> Colors = NewDictionary(
+                KeyValuePair("red", Color.Red),
+                KeyValuePair("blue", Color.Blue),
+                KeyValuePair("green", Color.Green),
+                KeyValuePair("orange", Color.Orange),
+                KeyValuePair("yellow", Color.Yellow),
+                KeyValuePair("white", Color.White),
+                KeyValuePair("black", Color.Black)
+            );
+
         public static Color? GetColor(String s) =>
             (s.StartsWith("#") && s.Length == 7)
             ? new Color(HexToInt(s.Substring(1, 2)), HexToInt(s.Substring(3, 2)), HexToInt(s.Substring(5, 2)))
-            : (colors.ContainsKey(s.ToLower()) ? colors[s.ToLower()] : (Color?)null);
+            : (Colors.ContainsKey(s.ToLower()) ? Colors[s.ToLower()] : (Color?)null);
 
         public static Vector3D? GetVector(String s) {
             var components = NewList<double>();

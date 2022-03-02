@@ -20,9 +20,9 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
 
-        public Dictionary<String, List<ItemFilter>> itemNamesToFilters = NewDictionary<string, List<ItemFilter>>();
-        public Dictionary<String, MyDefinitionId> itemNamesToBlueprints = NewDictionary<string, MyDefinitionId>();
-        public Func<String, MyDefinitionId> blueprintProvider = GetBlueprint;
+        public Dictionary<string, List<ItemFilter>> itemNamesToFilters = NewDictionary<string, List<ItemFilter>>();
+        public Dictionary<string, MyDefinitionId> itemNamesToBlueprints = NewDictionary<string, MyDefinitionId>();
+        public Func<string, MyDefinitionId> blueprintProvider = GetBlueprint;
 
         public void InitializeItems() {
             //Ores
@@ -135,35 +135,35 @@ namespace IngameScript {
             AddItems(Words("space credit"), IsItemType("MyObjectBuilder_PhysicalObject", "SpaceCredit"));
         }
 
-        void AddOre(String oreWord) => AddItems(Words(oreWord.ToLower() + " ore"), Ore(oreWord));
+        void AddOre(string oreWord) => AddItems(Words(oreWord.ToLower() + " ore"), Ore(oreWord));
 
-        void AddIngot(String ingotWord) => AddItems(Words(ingotWord.ToLower() + " ingot"), Ingot(ingotWord));
+        void AddIngot(string ingotWord) => AddItems(Words(ingotWord.ToLower() + " ingot"), Ingot(ingotWord));
 
-        void AddAmmo(String[] words, String ammoWord) => AddBlueprintItems(words, ammoWord, Ammo(ammoWord));
+        void AddAmmo(IEnumerable<string> words, string ammoWord) => AddBlueprintItems(words, ammoWord, Ammo(ammoWord));
 
-        void AddWeapon(String[] words, String weaponWord) => AddBlueprintItems(words, weaponWord, Tool(weaponWord + "Item"));
+        void AddWeapon(IEnumerable<string> words, string weaponWord) => AddBlueprintItems(words, weaponWord, Tool(weaponWord + "Item"));
 
-        void AddComponent(String[] words, String componentWord, String blueprintSuffix = "Component") => AddBlueprintItems(words, componentWord + blueprintSuffix, Component(componentWord));
+        void AddComponent(IEnumerable<string> words, string componentWord, string blueprintSuffix = "Component") => AddBlueprintItems(words, componentWord + blueprintSuffix, Component(componentWord));
 
-        void AddTools(String toolWord, String itemWord) {
+        void AddTools(string toolWord, string itemWord) {
             AddBlueprintItems(Words(toolWord), itemWord, Tool(itemWord + "Item"));
             AddBlueprintItems(Words("enhanced " + toolWord), itemWord + "2", Tool(itemWord + "2Item"));
             AddBlueprintItems(Words("proficient " + toolWord), itemWord + "3", Tool(itemWord + "3Item"));
             AddBlueprintItems(Words("elite " + toolWord), itemWord + "4", Tool(itemWord + "4Item"));
         }
 
-        void AddBlueprintItems(String[] words, String blueprintId, params ItemFilter[] filters) {
+        void AddBlueprintItems(IEnumerable<string> words, string blueprintId, params ItemFilter[] filters) {
             AddItems(words, filters);
             AddBluePrint(words, blueprintId);
         }
 
-        void AddBluePrint(string[] words, string blueprintId) {
+        void AddBluePrint(IEnumerable<string> words, string blueprintId) {
             var blueprint = blueprintProvider(blueprintId);
-            foreach (String word in words) itemNamesToBlueprints.Add(word, blueprint);
+            foreach (string word in words) itemNamesToBlueprints.Add(word, blueprint);
         }
 
-        void AddItems(String[] words, params ItemFilter[] filters) {
-            foreach (String word in words) itemNamesToFilters.Add(word.ToLower(), filters.ToList());
+        void AddItems(IEnumerable<string> words, params ItemFilter[] filters) {
+            foreach (string word in words) itemNamesToFilters.Add(word.ToLower(), filters.ToList());
         }
 
         public static MyDefinitionId GetBlueprint(string blueprintId) {
@@ -174,22 +174,22 @@ namespace IngameScript {
 
         public delegate bool ItemFilter(MyInventoryItem item);
 
-        public List<ItemFilter> GetItemFilters(String itemString) => GetItemsFromString(itemString, itemNamesToFilters, i => NewList(DynamicItemType(i.Split('.')))).SelectMany(x => x).ToList();
-        public List<MyDefinitionId> GetItemBluePrints(String itemString) => GetItemsFromString(itemString, itemNamesToBlueprints, blueprintProvider);
+        public List<ItemFilter> GetItemFilters(string itemString) => GetItemsFromString(itemString, itemNamesToFilters, i => NewList(DynamicItemType(i.Split('.')))).SelectMany(x => x).ToList();
+        public List<MyDefinitionId> GetItemBluePrints(string itemString) => GetItemsFromString(itemString, itemNamesToBlueprints, blueprintProvider);
         List<T> GetItemsFromString<T>(string itemString, Dictionary<string, T> values, Func<string, T> dynamicValue) => itemString.Split(',').Select(i => values.GetValueOrDefault(i.Trim().ToLower(), dynamicValue(i))).ToList();
 
-        public ItemFilter Consumable(String subType = null) => IsItemType("MyObjectBuilder_ConsumableItem", subType);
-        public ItemFilter Component(String subType = null) => IsItemType("MyObjectBuilder_Component", subType);
-        public ItemFilter Ammo(String subType = null) => IsItemType("MyObjectBuilder_AmmoMagazine", subType);
-        public ItemFilter Ingot(String subType = null) => IsItemType("MyObjectBuilder_Ingot", subType);
-        public ItemFilter Ore(String subType = null) => IsItemType("MyObjectBuilder_Ore", subType);
-        public ItemFilter Tool(String subType = null) => IsItemType("MyObjectBuilder_PhysicalGunObject", subType);
-        public ItemFilter ToolType(params String[] matches) => i => i.Type.TypeId.Equals("MyObjectBuilder_PhysicalGunObject") && matches.Any(s => i.Type.SubtypeId.Contains(s));
-        public ItemFilter IsItemType(String itemType, String subType = null) => i => (string.IsNullOrEmpty(itemType) || i.Type.TypeId.Equals(itemType)) && (string.IsNullOrEmpty(subType) || i.Type.SubtypeId.Equals(subType));
+        public ItemFilter Consumable(string subType = null) => IsItemType("MyObjectBuilder_ConsumableItem", subType);
+        public ItemFilter Component(string subType = null) => IsItemType("MyObjectBuilder_Component", subType);
+        public ItemFilter Ammo(string subType = null) => IsItemType("MyObjectBuilder_AmmoMagazine", subType);
+        public ItemFilter Ingot(string subType = null) => IsItemType("MyObjectBuilder_Ingot", subType);
+        public ItemFilter Ore(string subType = null) => IsItemType("MyObjectBuilder_Ore", subType);
+        public ItemFilter Tool(string subType = null) => IsItemType("MyObjectBuilder_PhysicalGunObject", subType);
+        public ItemFilter ToolType(params string[] matches) => i => i.Type.TypeId.Equals("MyObjectBuilder_PhysicalGunObject") && matches.Any(s => i.Type.SubtypeId.Contains(s));
+        public ItemFilter IsItemType(string itemType, string subType = null) => i => (string.IsNullOrEmpty(itemType) || i.Type.TypeId.Equals(itemType)) && (string.IsNullOrEmpty(subType) || i.Type.SubtypeId.Equals(subType));
 
         public ItemFilter DynamicItemType(string[] itemTypeSplit) => itemTypeSplit.Count() == 2 ? IsItemType(itemTypeSplit[0], itemTypeSplit[1]) : IsItemType("", itemTypeSplit[0]);
 
-        public Func<MyInventoryItem, bool> AllItem(List<ItemFilter> filters) => b => filters.All(f => f(b));
-        public Func<MyInventoryItem, bool> AnyItem(List<ItemFilter> filters) => b => filters.Any(f => f(b));
+        public Func<MyInventoryItem, bool> AllItem(IEnumerable<ItemFilter> filters) => b => filters.All(f => f(b));
+        public Func<MyInventoryItem, bool> AnyItem(IEnumerable<ItemFilter> filters) => b => filters.Any(f => f(b));
     }
 }

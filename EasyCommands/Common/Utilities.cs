@@ -41,5 +41,13 @@ namespace IngameScript {
         public static IVariable EmptyList() => GetStaticVariable(NewKeyedList());
         public static Vector3D Vector(double x, double y, double z) => new Vector3D(x, y, z);
         public static bool AnyNotNull(params Object[] objects) => objects.Any(o => o != null);
+
+        // misc stuff
+        static T findLast<T>(List<IToken> parameters) where T : class, IToken => parameters.OfType<T>().LastOrDefault();
+
+        // Generate enumerations of words
+        static IEnumerable<string> Words(params string[] words) => words;
+        static IEnumerable<string> AllWords(params IEnumerable<string>[] words) => words.SelectMany(w => w);
+        static IEnumerable<string> PluralWords(params string[] words) => words.Concat(words.Select(w => w + "s"));
     }
 }

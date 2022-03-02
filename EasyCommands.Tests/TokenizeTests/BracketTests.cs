@@ -9,8 +9,7 @@ namespace EasyCommands.Tests.TokenizeTests {
     public class BracketTests : ForceLocale {
         [TestMethod]
         public void TestBasicBrackets() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test [ string ]");
+            var tokens = Lexer.Tokenize("test [ string ]");
             Assert.AreEqual(4, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("[", tokens[1].original);
@@ -20,8 +19,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestBracketsMissingSpaces() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test [string] there");
+            var tokens = Lexer.Tokenize("test [string] there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("[", tokens[1].original);
@@ -32,8 +30,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestInlineBrackets() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test list[string] there");
+            var tokens = Lexer.Tokenize("test list[string] there");
             Assert.AreEqual(6, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("list", tokens[1].original);
@@ -45,8 +42,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMultiInlineBrackets() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test list[string1][string2] there");
+            var tokens = Lexer.Tokenize("test list[string1][string2] there");
             Assert.AreEqual(9, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("list", tokens[1].original);
@@ -61,8 +57,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestCommaSeparatedInlineBrackets() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test list[string1,string2] there");
+            var tokens = Lexer.Tokenize("test list[string1,string2] there");
             Assert.AreEqual(8, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("list", tokens[1].original);
@@ -76,8 +71,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceEmptyBrackets() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test list[] there");
+            var tokens = Lexer.Tokenize("test list[] there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("list", tokens[1].original);
@@ -88,8 +82,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceBeforeOpeningBracket() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test [string ]there");
+            var tokens = Lexer.Tokenize("test [string ]there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("[", tokens[1].original);
@@ -100,8 +93,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceAfterClosingBracket() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test[ string ] there");
+            var tokens = Lexer.Tokenize("test[ string ] there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("[", tokens[1].original);
@@ -112,8 +104,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestEmbeddedBracketsMissingSpaces() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test [[string] there]");
+            var tokens = Lexer.Tokenize("test [[string] there]");
             Assert.AreEqual(7, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("[", tokens[1].original);

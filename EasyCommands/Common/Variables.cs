@@ -63,9 +63,9 @@ namespace IngameScript {
 
         public class UniOperandVariable : IVariable {
             public IVariable a;
-            public UniOperand operand;
+            public UnaryOperator operand;
 
-            public UniOperandVariable(UniOperand op, IVariable v) {
+            public UniOperandVariable(UnaryOperator op, IVariable v) {
                 operand = op;
                 a = v;
             }
@@ -75,9 +75,9 @@ namespace IngameScript {
 
         public class BiOperandVariable : IVariable {
             public IVariable a, b;
-            public BiOperand operand;
+            public BinaryOperator operand;
 
-            public BiOperandVariable(BiOperand op, IVariable left, IVariable right) {
+            public BiOperandVariable(BinaryOperator op, IVariable left, IVariable right) {
                 operand = op;
                 a = left;
                 b = right;

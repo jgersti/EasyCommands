@@ -9,8 +9,7 @@ namespace EasyCommands.Tests.TokenizeTests {
     public class ParenthesisTests : ForceLocale {
         [TestMethod]
         public void TestBasicParenthesis() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test ( string )");
+            var tokens = Lexer.Tokenize("test ( string )");
             Assert.AreEqual(4, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -20,8 +19,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestParenthesesMissingSpaces() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test (string) there");
+            var tokens = Lexer.Tokenize("test (string) there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -32,8 +30,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceBeforeOpeningParenthesis() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test (string )there");
+            var tokens = Lexer.Tokenize("test (string )there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -44,8 +41,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestMissingSpaceAfterClosingParenthesis() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test( string ) there");
+            var tokens = Lexer.Tokenize("test( string ) there");
             Assert.AreEqual(5, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
@@ -56,8 +52,7 @@ namespace EasyCommands.Tests.TokenizeTests {
 
         [TestMethod]
         public void TestEmbeddedParenthesesMissingSpaces() {
-            var program = MDKFactory.CreateProgram<Program>();
-            var tokens = program.Tokenize("test ((string) there)");
+            var tokens = Lexer.Tokenize("test ((string) there)");
             Assert.AreEqual(7, tokens.Count);
             Assert.AreEqual("test", tokens[0].original);
             Assert.AreEqual("(", tokens[1].original);
