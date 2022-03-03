@@ -204,7 +204,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
         }
 
         void VerifyAggregator(Aggregator aggregator, float expectedValue) {
-            Assert.AreEqual(expectedValue, CastNumber(aggregator(aggregationList, ResolvePrimitive)));
+            Assert.AreEqual(expectedValue, aggregator(aggregationList, Primitive.From).AsNumber());
         }
     }
 }

@@ -53,13 +53,13 @@ namespace IngameScript {
                 var entities = selector.GetEntities();
                 IBlockHandler b = BlockHandlerRegistry.GetBlockHandler(GetBlockType());
 
-                return CastList(index.GetValue()).keyedValues
+                return index.GetValue().AsList().keyedValues
                     .Select(v => v.GetValue())
                     .SelectMany(p => {
                         if (p.returnType == Return.NUMERIC)
-                            return entities.GetRange((int)CastNumber(p), 1);
+                            return entities.GetRange((int)p.AsNumber(), 1);
                         else if (p.returnType == Return.STRING) {
-                            var s = CastString(p);
+                            var s = p.AsString();
                             return entities.Where(o => s == b.GetName(o));
                         } else
                             return Empty<Object>();
@@ -79,7 +79,7 @@ namespace IngameScript {
             }
 
             public List<Object> GetEntities() {
-                var selectorString = CastString(selector.GetValue());
+                var selectorString = selector.GetValue().AsString();
                 var resolvedIsGroup = false;
                 Block bt = blockType ?? ResolveType(selectorString, out resolvedIsGroup);
                 return isGroup || resolvedIsGroup ? BlockHandlerRegistry.GetBlocksInGroup(bt, selectorString) : BlockHandlerRegistry.GetBlocks(bt, selectorString);
@@ -87,7 +87,7 @@ namespace IngameScript {
 
             public Block GetBlockType() {
                 bool ignored;
-                return blockType ?? ResolveType(CastString(selector.GetValue()), out ignored);
+                return blockType ?? ResolveType(selector.GetValue().AsString(), out ignored);
             }
 
             Block ResolveType(String selector, out bool isGroup) {

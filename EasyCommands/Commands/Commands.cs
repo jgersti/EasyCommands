@@ -76,7 +76,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                Print(CastString(variable.GetValue()));
+                Print(variable.GetValue().AsString());
                 return true;
             }
         }
@@ -214,7 +214,7 @@ namespace IngameScript {
             public override void Reset() { remainingWaitTime = -1; }
             public override bool Execute() {
                 if (remainingWaitTime < 0) {
-                    remainingWaitTime = CastNumber(waitInterval.GetValue()) * 1000;
+                    remainingWaitTime = waitInterval.GetValue().AsNumber() * 1000;
                     return false;
                 }
                 remainingWaitTime -= PROGRAM.Runtime.TimeSinceLastRun.TotalMilliseconds;
@@ -232,7 +232,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                var broadcastTag = CastString(tag.GetValue());
+                var broadcastTag = tag.GetValue().AsString();
                 if (shouldListen)
                     PROGRAM.IGC.RegisterBroadcastListener(broadcastTag);
                 else
@@ -250,7 +250,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                PROGRAM.IGC.SendBroadcastMessage(CastString(tag.GetValue()), CastString(message.GetValue()));
+                PROGRAM.IGC.SendBroadcastMessage(tag.GetValue().AsString(), message.GetValue().AsString());
                 return true;
             }
         }
@@ -288,14 +288,14 @@ namespace IngameScript {
             public override bool Execute() {
                 if (from.GetBlockType() != Block.CARGO || to.GetBlockType() != Block.CARGO) throw new Exception("Transfers can only be executed on cargo block types");
 
-                var filter = PROGRAM.AnyItem(PROGRAM.GetItemFilters(CastString((second ?? first).GetValue())));
+                var filter = PROGRAM.AnyItem(PROGRAM.GetItemFilters((second ?? first).GetValue().AsString()));
                 var items = NewList<MyInventoryItem>();
 
                 var toInventories = to.GetEntities().Cast<IMyInventory>().Where(i => !i.IsFull).ToList();
                 var fromInventories = from.GetEntities().Cast<IMyInventory>().Where(i => toInventories.All(to => i.Owner.EntityId != to.Owner.EntityId));
 
                 MyFixedPoint amountLeft = MyFixedPoint.MaxValue;
-                if (second != null) amountLeft = (MyFixedPoint)CastNumber(first.GetValue());
+                if (second != null) amountLeft = (MyFixedPoint)first.GetValue().AsNumber();
 
                 int transfers = 0;
 
@@ -361,7 +361,7 @@ namespace IngameScript {
 
             bool EvaluateCondition() {
                 if ((!isExecuting && alwaysEvaluate) || !evaluated) {
-                    evaluatedValue = CastBoolean(condition.GetValue());
+                    evaluatedValue = condition.GetValue().AsBool();
                     evaluated = true;
                 }
                 return evaluatedValue;
@@ -396,7 +396,7 @@ namespace IngameScript {
             public override bool Execute() {
                 if ((currentCommands?.Count ?? 0) == 0) {
                     currentCommands = commandsToExecute.Select(c => c.Clone()).ToList();//Deep Copy
-                    if (loopsLeft == 0) loopsLeft = (int)Math.Round(CastNumber(loopCount.GetValue()));
+                    if (loopsLeft == 0) loopsLeft = (int)Math.Round(loopCount.GetValue().AsNumber());
                     loopsLeft -= 1;
                 }
 
@@ -435,7 +435,7 @@ namespace IngameScript {
             }
 
             public override bool Execute() {
-                listElements = listElements ?? CastList(list.GetValue()).GetValues();
+                listElements = listElements ?? list.GetValue().AsList().GetValues();
 
                 if (executed && listElements.Count == 0) return true;
 

@@ -33,7 +33,7 @@ namespace IngameScript {
                 AddPropertyHandler(Property.RUN, enableHandler);
                 AddNumericHandler(Property.RANGE, b => b.SpeedLimit, (b, v) => b.SpeedLimit = v, 10);
                 AddPropertyHandler(Property.CONNECTED, TerminalPropertyHandler("DockingMode", true));
-                AddVectorHandler(Property.TARGET, b => b.CurrentWaypoint.Coords, (b,v) => SetWaypoints(b, CastList(ResolvePrimitive(v))));
+                AddVectorHandler(Property.TARGET, b => b.CurrentWaypoint.Coords, (b,v) => SetWaypoints(b, Primitive.From(v).AsList()));
                 AddListHandler(Property.WAYPOINTS,
                     b => {
                         var waypoints = NewList<MyWaypointInfo>();
@@ -50,7 +50,7 @@ namespace IngameScript {
                 b.ClearWaypoints();
                 for (int i = 0; i < waypoints.keyedValues.Count; i++) {
                     KeyedVariable value = waypoints.keyedValues[i];
-                    b.AddWaypoint(new MyWaypointInfo(value.HasKey() ? value.GetKey() : "Waypoint " + (i+1), CastVector(value.GetValue())));
+                    b.AddWaypoint(new MyWaypointInfo(value.HasKey() ? value.GetKey() : "Waypoint " + (i+1), value.GetValue().AsVector()));
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace IngameScript {
                 AddNumericHandler(Property.WEIGHT, b => b.CalculateShipMass().TotalMass);
                 AddBooleanHandler(Property.USE, b => b.IsUnderControl);
                 AddDirectionHandlers(Property.VELOCITY, Direction.NONE,
-                    TypeHandler(ReturnTypedHandler(Return.VECTOR, 
+                    TypeHandler(ReturnTypedHandler(Return.VECTOR,
                         TypeHandler(VectorHandler(b => VelocityVector(b)), Return.VECTOR),
                         TypeHandler(NumericHandler(b => (float)VelocityVector(b).Length(), (b, v) => (b as IMyRemoteControl).SpeedLimit = v), Return.NUMERIC)), Direction.NONE),
                     TypeHandler(NumericHandler(b => (float)VelocityVector(b).Y), Direction.UP),

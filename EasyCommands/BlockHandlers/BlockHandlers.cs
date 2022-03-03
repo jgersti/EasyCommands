@@ -147,7 +147,7 @@ namespace IngameScript {
 
         public class SimpleTypedHandler<T, U> : SimplePropertyHandler<T> {
             public SimpleTypedHandler(GetTypedProperty<T, U> GetValue, SetTypedProperty<T, U> SetValue, Func<Primitive, U> Cast, U incrementValue)
-                : base((b, p) => ResolvePrimitive(GetValue(b)), (b, p, v) => SetValue(b, Cast(v)), ResolvePrimitive(incrementValue)) {
+                : base((b, p) => Primitive.From(GetValue(b)), (b, p, v) => SetValue(b, Cast(v)), Primitive.From(incrementValue)) {
             }
         }
 
@@ -191,7 +191,7 @@ namespace IngameScript {
             public Direction defaultDirection = Direction.UP;
 
             public BlockHandler() {
-                AddListHandler(Property.NAMES, b => CastList(ResolvePrimitive(Name(b))));
+                AddListHandler(Property.NAMES, b => Primitive.From(Name(b)).AsList());
                 defaultPropertiesByPrimitive[Return.STRING] = Property.NAMES;
             }
 
@@ -285,13 +285,13 @@ namespace IngameScript {
                 return new SimplePropertySupplierBasedHandler<T>(p => typeHandlers.GetValueOrDefault(Resolver(p), typeHandlers[defaultType]));
             }
 
-            public PropertyHandler<T> BooleanHandler(GetTypedProperty<T, bool> Get, SetTypedProperty<T, bool> Set = null) => TypedPropertyHandler(Get, Set, CastBoolean, true);
-            public PropertyHandler<T> StringHandler(GetTypedProperty<T, string> Get, SetTypedProperty<T, string> Set = null) => TypedPropertyHandler(Get, Set, CastString, "");
-            public PropertyHandler<T> NumericHandler(GetTypedProperty<T, float> Get, SetTypedProperty<T, float> Set = null, float delta = 0) => TypedPropertyHandler(Get, Set, CastNumber, delta);
-            public PropertyHandler<T> VectorHandler(GetTypedProperty<T, Vector3D> Get, SetTypedProperty<T, Vector3D> Set = null) => TypedPropertyHandler(Get, Set, CastVector, Vector3D.Zero);
-            public PropertyHandler<T> ColorHandler(GetTypedProperty<T, Color> Get, SetTypedProperty<T, Color> Set = null) => TypedPropertyHandler(Get, Set, CastColor, new Color(10, 10, 10));
-            public PropertyHandler<T> ListHandler(GetTypedProperty<T, KeyedList> Get, SetTypedProperty<T, KeyedList> Set = null) => TypedPropertyHandler(Get, Set, CastList, NewKeyedList());
-            PropertyHandler<T> TypedPropertyHandler<U>(GetTypedProperty<T, U> Get, SetTypedProperty<T, U> Set, Func<Primitive, U> Cast, U delta) => new SimpleTypedHandler<T, U>(Get, Set ?? ((b, v) => { }), Cast, delta);
+            public PropertyHandler<T> BooleanHandler(GetTypedProperty<T, bool> Get, SetTypedProperty<T, bool> Set = null) => TypedPropertyHandler(Get, Set, true);
+            public PropertyHandler<T> StringHandler(GetTypedProperty<T, string> Get, SetTypedProperty<T, string> Set = null) => TypedPropertyHandler(Get, (b, v) => Set(b, v.Replace("\\n","\n")), "");
+            public PropertyHandler<T> NumericHandler(GetTypedProperty<T, float> Get, SetTypedProperty<T, float> Set = null, float delta = 0) => TypedPropertyHandler(Get, Set, delta);
+            public PropertyHandler<T> VectorHandler(GetTypedProperty<T, Vector3D> Get, SetTypedProperty<T, Vector3D> Set = null) => TypedPropertyHandler(Get, Set, Vector3D.Zero);
+            public PropertyHandler<T> ColorHandler(GetTypedProperty<T, Color> Get, SetTypedProperty<T, Color> Set = null) => TypedPropertyHandler(Get, Set, new Color(10, 10, 10));
+            public PropertyHandler<T> ListHandler(GetTypedProperty<T, KeyedList> Get, SetTypedProperty<T, KeyedList> Set = null) => TypedPropertyHandler(Get, Set, NewKeyedList());
+            PropertyHandler<T> TypedPropertyHandler<U>(GetTypedProperty<T, U> Get, SetTypedProperty<T, U> Set, U delta) => new SimpleTypedHandler<T, U>(Get, Set ?? ((b, v) => { }), p => p.As<U>(), delta);
         }
 
         public abstract class MultiInstanceBlockHandler<T> : BlockHandler<T> where T : class {

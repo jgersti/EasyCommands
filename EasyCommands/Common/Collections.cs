@@ -32,9 +32,9 @@ namespace IngameScript {
             public IVariable GetValue(Primitive key) {
                 switch(key.returnType) {
                     case Return.NUMERIC:
-                        return keyedValues[(int)CastNumber(key)];
+                        return keyedValues[(int)key.AsNumber()];
                     case Return.STRING:
-                        var keyString = CastString(key);
+                        var keyString = key.AsString();
                         return keyedValues.Where(v => v.GetKey() == keyString)
                             .Cast<IVariable>()
                             .DefaultIfEmpty(EmptyList())
@@ -47,9 +47,9 @@ namespace IngameScript {
             //If numeric, set by Index.  If string, put (or append) keyed value
             public void SetValue(Primitive key, IVariable value) {
                 if (key.returnType == Return.NUMERIC) {
-                    keyedValues[(int)CastNumber(key)] = AsKeyedVariable(value);
+                    keyedValues[(int)key.AsNumber()] = AsKeyedVariable(value);
                 } else if (key.returnType == Return.STRING) {
-                    var keyString = CastString(key);
+                    var keyString = key.AsString();
                     KeyedVariable existing = keyedValues.Where(v => v.GetKey() == keyString).FirstOrDefault();
                     if (existing == null)
                         keyedValues.Add(new KeyedVariable(GetStaticVariable(keyString), value));

@@ -25,16 +25,16 @@ namespace IngameScript {
                 AddBooleanHandler(Property.COMPLETE, b => b.IsQueueEmpty, (b,v) => { if (!v) b.ClearQueue(); });
                 AddBooleanHandler(Property.AUTO, b => b.CooperativeMode, (b, v) => b.CooperativeMode = v);
                 AddPropertyHandler(ValueProperty.CREATE, new PropertyHandler<IMyAssembler>() {
-                    Get = (b, p) => ResolvePrimitive(b.Mode == MyAssemblerMode.Assembly && GetProducingAmount(b, p) >= GetRequestedAmount(p)),
+                    Get = (b, p) => Primitive.From(b.Mode == MyAssemblerMode.Assembly && GetProducingAmount(b, p) >= GetRequestedAmount(p)),
                     Set = (b, p, v) => { b.Mode = MyAssemblerMode.Assembly; AddQueueItem(b, p); }
                 }) ;
                 AddPropertyHandler(ValueProperty.DESTROY, new PropertyHandler<IMyAssembler>() {
-                    Get = (b, p) => ResolvePrimitive(b.Mode == MyAssemblerMode.Disassembly && GetProducingAmount(b, p) >= GetRequestedAmount(p)),
+                    Get = (b, p) => Primitive.From(b.Mode == MyAssemblerMode.Disassembly && GetProducingAmount(b, p) >= GetRequestedAmount(p)),
                     Set = (b, p, v) => { b.Mode = MyAssemblerMode.Disassembly; AddQueueItem(b, p); }
                 });
 
                 AddPropertyHandler(ValueProperty.AMOUNT, new PropertyHandler<IMyAssembler>() {
-                    Get = (b, v) => ResolvePrimitive(GetProducingAmount(b, v)),
+                    Get = (b, v) => Primitive.From(GetProducingAmount(b, v)),
                     Set = (b, p, v) => AddQueueItem(b, p)
                 });
 
@@ -45,8 +45,8 @@ namespace IngameScript {
                 });
             }
 
-            float GetRequestedAmount(PropertySupplier p) => CastNumber(NewList(p.attributeValue.GetValue(), (p.propertyValue ?? GetStaticVariable(1)).GetValue()).Find(v => v.returnType == Return.NUMERIC) ?? ResolvePrimitive(1));
-            string GetRequestedItemFilter(PropertySupplier p) => CastString(NewList(p.attributeValue.GetValue(), (p.propertyValue ?? GetStaticVariable("*")).GetValue()).Find(v => v.returnType == Return.STRING) ?? ResolvePrimitive("*"));
+            float GetRequestedAmount(PropertySupplier p) => NewList(p.attributeValue.GetValue(), (p.propertyValue ?? GetStaticVariable(1)).GetValue()).Find(v => v.returnType == Return.NUMERIC)?.AsNumber() ?? 1;
+            string GetRequestedItemFilter(PropertySupplier p) => NewList(p.attributeValue.GetValue(), (p.propertyValue ?? GetStaticVariable("*")).GetValue()).Find(v => v.returnType == Return.STRING)?.AsString() ?? "*";
 
             float GetProducingAmount(IMyAssembler b, PropertySupplier p) {
                 var definitions = PROGRAM.GetItemBluePrints(GetRequestedItemFilter(p));

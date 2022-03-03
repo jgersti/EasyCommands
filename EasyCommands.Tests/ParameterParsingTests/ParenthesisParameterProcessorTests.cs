@@ -30,7 +30,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             IVariable condition = conditionalCommand.condition;
             Assert.IsTrue(condition is ComparisonVariable);
             ComparisonVariable comparison = (ComparisonVariable)condition;
-            Assert.IsTrue(comparison.a is BiOperandVariable);
+            Assert.IsTrue(comparison.a is BinaryOperationVariable);
         }
     }
 }

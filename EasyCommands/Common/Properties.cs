@@ -38,14 +38,14 @@ namespace IngameScript {
 
             public PropertySupplier ResolveDynamicProperty() {
                 PropertySupplier supplier = WithAttributeValue(null);
-                var propertyString = CastString(attributeValue.GetValue());
+                var propertyString = attributeValue.GetValue().AsString();
 
                 if(Lexer.PropertyWords.ContainsKey(propertyString)) {
                     var tokens = Lexer.PropertyWords[propertyString];
                     PropertyToken property = findLast<PropertyToken>(tokens);
                     BooleanToken booleanParameter = findLast<BooleanToken>(tokens);
                     if (property != null) supplier = WithPropertyType(property.value+"");
-                    if (!booleanParameter?.value ?? false) supplier = supplier.Inverse(true).WithPropertyValue(new UniOperandVariable(UnaryOperator.REVERSE, propertyValue ?? GetStaticVariable(true)));
+                    if (!booleanParameter?.value ?? false) supplier = supplier.Inverse(true).WithPropertyValue(new UnaryOperationVariable(UnaryOperator.REVERSE, propertyValue ?? GetStaticVariable(true)));
                 } else {
                     supplier = WithPropertyType(propertyString);
                 }

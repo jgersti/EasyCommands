@@ -27,7 +27,7 @@ namespace IngameScript {
                 AddStringHandler(Property.NAME, b => Name(b));
                 AddBooleanHandler(Property.ENABLE, b => b.ContentType != ContentType.NONE, (b, v) => b.ContentType = v ? ContentType.TEXT_AND_IMAGE : ContentType.NONE);
                 AddStringHandler(Property.TEXT, b => { var builder = new StringBuilder(); b.ReadText(builder); return builder.ToString(); }, (b, v) => { b.ContentType = ContentType.TEXT_AND_IMAGE; b.WriteText(v); });
-                AddStringHandler(Property.MEDIA, b => b.CurrentlyShownImage ?? "", (b,v) => SetImages(b,CastList(ResolvePrimitive(v))));
+                AddStringHandler(Property.MEDIA, b => b.CurrentlyShownImage ?? "", (b,v) => SetImages(b, Primitive.From(v).AsList()));
                 AddStringHandler(Property.RUN, b => b.Script ?? "", (b, v) => { b.ContentType = ContentType.SCRIPT; b.Script = v; });
                 AddNumericHandler(Property.OFFSET, b => b.TextPadding, (b, v) => b.TextPadding = v, 1);
                 AddBooleanHandler(Property.RATIO, b => b.PreserveAspectRatio, (b, v) => b.PreserveAspectRatio = v);
@@ -57,7 +57,7 @@ namespace IngameScript {
             void SetImages(IMyTextSurface block, KeyedList images) {
                 block.ContentType = ContentType.TEXT_AND_IMAGE;
                 block.ClearImagesFromSelection();
-                block.AddImagesToSelection(images.keyedValues.Select(i => CastString(i.GetValue())).ToList());
+                block.AddImagesToSelection(images.keyedValues.Select(i => i.GetValue().AsString()).ToList());
             }
 
             public override string Name(IMyTextSurface block) => block.DisplayName;

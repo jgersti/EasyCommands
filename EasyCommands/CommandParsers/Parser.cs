@@ -111,7 +111,7 @@ namespace IngameScript {
 
                 //FunctionProcessor
                 OneValueRule(Type<VariableToken>, requiredLeft<FunctionToken>(),
-                    (name, function) => new FunctionDefinitionToken(() => CastString(name.value.GetValue()), function.value)),
+                    (name, function) => new FunctionDefinitionToken(() => name.value.GetValue().AsString(), function.value)),
 
                 //PropertyProcessor
                 NoValueRule(Type<PropertyToken>, p => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme))),
@@ -174,11 +174,11 @@ namespace IngameScript {
 
                 //AfterUniOperationProcessor
                 OneValueRule(Type<LeftUnaryOperationToken>, requiredLeft<VariableToken>(),
-                    (p, df) => new VariableToken(new UniOperandVariable(p.value, df.value))),
+                    (p, df) => new VariableToken(new UnaryOperationVariable(p.value, df.value))),
 
                 //UniOperationProcessor
                 OneValueRule(Type<UnaryOperationToken>, requiredRight<VariableToken>(),
-                    (p, df) => new VariableToken(new UniOperandVariable(p.value, df.value))),
+                    (p, df) => new VariableToken(new UnaryOperationVariable(p.value, df.value))),
 
                 //VectorProcessor
                 FourValueRule(Type<ColonSeparatorToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(), requiredRight<ColonSeparatorToken>(), requiredRight<VariableToken>(),
@@ -203,19 +203,19 @@ namespace IngameScript {
 
                 //NotProcessor
                 OneValueRule(Type<NotToken>, requiredRight<VariableToken>(),
-                    (p, right) => new VariableToken(new UniOperandVariable(UnaryOperator.REVERSE, right.value))),
+                    (p, right) => new VariableToken(new UnaryOperationVariable(UnaryOperator.REVERSE, right.value))),
 
                 //ReverseProcessor
                 OneValueRule(Type<ReverseToken>, requiredRight<VariableToken>(),
-                    (p, right) => new VariableToken(new UniOperandVariable(UnaryOperator.REVERSE, right.value))),
+                    (p, right) => new VariableToken(new UnaryOperationVariable(UnaryOperator.REVERSE, right.value))),
 
                 //AndProcessor
                 TwoValueRule(Type<AndToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
-                    (p, left, right) => new VariableToken(new BiOperandVariable(BinaryOperator.AND, left.value, right.value))),
+                    (p, left, right) => new VariableToken(new BinaryOperationVariable(BinaryOperator.AND, left.value, right.value))),
 
                 //OrProcessor
                 TwoValueRule(Type<OrToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
-                    (p, left, right) => new VariableToken(new BiOperandVariable(BinaryOperator.OR, left.value, right.value))),
+                    (p, left, right) => new VariableToken(new BinaryOperationVariable(BinaryOperator.OR, left.value, right.value))),
 
                 //Tier4OperationProcessor
                 BiOperandProcessor(4),
@@ -280,7 +280,7 @@ namespace IngameScript {
 
                 //IfProcessor
                 OneValueRule(Type<IfToken>, requiredRight<VariableToken>(),
-                    (p, var) => new ConditionToken(p.inverseCondition ? new UniOperandVariable(UnaryOperator.REVERSE, var.value) : var.value, p.alwaysEvaluate, p.swapCommands)),
+                    (p, var) => new ConditionToken(p.inverseCondition ? new UnaryOperationVariable(UnaryOperator.REVERSE, var.value) : var.value, p.alwaysEvaluate, p.swapCommands)),
 
                 //AmbiguousSelectorPropertyProcessor
                 new BranchingProcessor<SelectorToken>(

@@ -16,7 +16,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("print 'Hello World'");
             Assert.IsTrue(command is PrintCommand);
             PrintCommand printCommand = (PrintCommand)command;
-            Assert.AreEqual("Hello World", CastString(printCommand.variable.GetValue()));
+            Assert.AreEqual("Hello World", printCommand.variable.GetValue().AsString());
         }
 
         [TestMethod]
@@ -36,7 +36,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("listen \"garageDoors\"");
             Assert.IsTrue(command is ListenCommand);
             ListenCommand listenCommand = (ListenCommand)command;
-            Assert.AreEqual("garageDoors", CastString(listenCommand.tag.GetValue()));
+            Assert.AreEqual("garageDoors", listenCommand.tag.GetValue().AsString());
         }
 
         [TestMethod]
@@ -45,8 +45,8 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("send \"goto openDoors\" to \"garageDoors\"");
             Assert.IsTrue(command is SendCommand);
             SendCommand sendCommand = (SendCommand)command;
-            Assert.AreEqual("garageDoors", CastString(sendCommand.tag.GetValue()));
-            Assert.AreEqual("goto openDoors", CastString(sendCommand.message.GetValue()));
+            Assert.AreEqual("garageDoors",sendCommand.tag.GetValue().AsString());
+            Assert.AreEqual("goto openDoors",sendCommand.message.GetValue().AsString());
         }
 
         [TestMethod]
@@ -91,8 +91,8 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             FunctionCommand functionCommand = (FunctionCommand)command;
             Assert.AreEqual("listen", functionCommand.functionName());
             Assert.AreEqual(true, functionCommand.switchExecution);
-            Assert.AreEqual(2, CastNumber(functionCommand.inputParameters[0].GetValue()));
-            Assert.AreEqual(3, CastNumber(functionCommand.inputParameters[1].GetValue()));
+            Assert.AreEqual(2, functionCommand.inputParameters[0].GetValue().AsNumber());
+            Assert.AreEqual(3, functionCommand.inputParameters[1].GetValue().AsNumber());
         }
 
         [TestMethod]
@@ -104,8 +104,8 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             FunctionCommand functionCommand = (FunctionCommand)command;
             Assert.AreEqual("listen", functionCommand.functionName());
             Assert.AreEqual(false, functionCommand.switchExecution);
-            Assert.AreEqual(2, CastNumber(functionCommand.inputParameters[0].GetValue()));
-            Assert.AreEqual(3, CastNumber(functionCommand.inputParameters[1].GetValue()));
+            Assert.AreEqual(2, functionCommand.inputParameters[0].GetValue().AsNumber());
+            Assert.AreEqual(3, functionCommand.inputParameters[1].GetValue().AsNumber());
         }
 
         [TestMethod]
@@ -125,7 +125,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("wait");
             Assert.IsTrue(command is WaitCommand);
             WaitCommand waitCommand = (WaitCommand)command;
-            Assert.AreEqual(0.01666f, CastNumber(waitCommand.waitInterval.GetValue())); // 1/60 second
+            Assert.AreEqual(0.01666f, waitCommand.waitInterval.GetValue().AsNumber()); // 1/60 second
         }
 
         [TestMethod]
@@ -134,7 +134,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("wait 3");
             Assert.IsTrue(command is WaitCommand);
             WaitCommand waitCommand = (WaitCommand)command;
-            Assert.AreEqual(3, CastNumber(waitCommand.waitInterval.GetValue()));
+            Assert.AreEqual(3, waitCommand.waitInterval.GetValue().AsNumber());
         }
 
         [TestMethod]
@@ -143,7 +143,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("wait 3 ticks");
             Assert.IsTrue(command is WaitCommand);
             WaitCommand waitCommand = (WaitCommand)command;
-            Assert.AreEqual(0.05f, CastNumber(waitCommand.waitInterval.GetValue()));
+            Assert.AreEqual(0.05f, waitCommand.waitInterval.GetValue().AsNumber());
         }
 
         [TestMethod]

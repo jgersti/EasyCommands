@@ -37,7 +37,7 @@ namespace IngameScript {
         public static IEnumerable<T> Once<T>(T element) => Enumerable.Repeat(element, 1);
 
         //Other useful utilities
-        public static IVariable GetStaticVariable(object o) => new StaticVariable(ResolvePrimitive(o));
+        public static IVariable GetStaticVariable(object o) => new StaticVariable(Primitive.From(o));
         public static IVariable EmptyList() => GetStaticVariable(NewKeyedList());
         public static Vector3D Vector(double x, double y, double z) => new Vector3D(x, y, z);
         public static bool AnyNotNull(params Object[] objects) => objects.Any(o => o != null);
@@ -49,5 +49,36 @@ namespace IngameScript {
         static IEnumerable<string> Words(params string[] words) => words;
         static IEnumerable<string> AllWords(params IEnumerable<string>[] words) => words.SelectMany(w => w);
         static IEnumerable<string> PluralWords(params string[] words) => words.Concat(words.Select(w => w + "s"));
+
+        //Conversion stuff
+        static string VectorToString(Vector3D vector) => vector.X + ":" + vector.Y + ":" + vector.Z;
+        static string ColorToString(Color color) => "#" + IntToHex(color.R) + IntToHex(color.G) + IntToHex(color.B);
+
+        static int HexToInt(string hex) => int.Parse(hex.ToUpper(), System.Globalization.NumberStyles.AllowHexSpecifier);
+        static string IntToHex(int hex) => hex.ToString("X2");
+
+        static readonly Dictionary<string, Color> Colors = NewDictionary(
+                KeyValuePair("red", Color.Red),
+                KeyValuePair("blue", Color.Blue),
+                KeyValuePair("green", Color.Green),
+                KeyValuePair("orange", Color.Orange),
+                KeyValuePair("yellow", Color.Yellow),
+                KeyValuePair("white", Color.White),
+                KeyValuePair("black", Color.Black)
+            );
+
+        public static Color? ParseColor(String s) =>
+            (s.StartsWith("#") && s.Length == 7)
+            ? new Color(HexToInt(s.Substring(1, 2)), HexToInt(s.Substring(3, 2)), HexToInt(s.Substring(5, 2)))
+            : (Colors.ContainsKey(s.ToLower()) ? Colors[s.ToLower()] : (Color?)null);
+
+        public static Vector3D? ParseVector(String s) {
+            var components = NewList<double>();
+            foreach (var component in s.Split(':')) {
+                double result;
+                if (Double.TryParse(component, out result)) components.Add(result);
+            }
+            return components.Count() == 3 ? Vector(components[0], components[1], components[2]) : (Vector3D?)null;
+        }
     }
 }

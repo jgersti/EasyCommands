@@ -165,20 +165,20 @@ namespace IngameScript {
                 AddWords(Words("is", "are", "equal", "equals", "=", "=="), new ComparisonToken((a, b) => a.CompareTo(b) == 0));
                 AddWords(Words(">="), new ComparisonToken((a, b) => a.CompareTo(b) >= 0));
                 AddWords(Words("greater", ">", "above", "more"), new ComparisonToken((a, b) => a.CompareTo(b) > 0));
-                AddWords(Words("contain", "contains"), new ComparisonToken((a, b) => CastBoolean(PROGRAM.PerformOperation(BinaryOperator.CONTAINS, a, b))));
+                AddWords(Words("contain", "contains"), new ComparisonToken((a, b) => Operations.Evaluate(BinaryOperator.CONTAINS, a, b).AsBool()));
 
                 //Aggregation Words
                 AddWords(Words("any"), new AggregationModeToken(AggregationMode.ANY));
                 AddWords(Words("all"), new AggregationModeToken(AggregationMode.ALL));
                 AddWords(Words("none"), new AggregationModeToken(AggregationMode.NONE));
-                AddWords(Words("average", "avg"), new PropertyAggregationToken((blocks, primitiveSupplier) => PROGRAM.SumAggregator(blocks, primitiveSupplier).Divide(ResolvePrimitive(Math.Max(1, blocks.Count())))));
-                AddWords(Words("minimum", "min"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Min() ?? ResolvePrimitive(0)));
-                AddWords(Words("maximum", "max"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Max() ?? ResolvePrimitive(0)));
-                AddWords(Words("count"), new PropertyAggregationToken((blocks, primitiveSupplier) => ResolvePrimitive(blocks.Count())));
-                AddAmbiguousWords(Words("number"), new PropertyAggregationToken((blocks, primitiveSupplier) => ResolvePrimitive(blocks.Count())));
+                AddWords(Words("average", "avg"), new PropertyAggregationToken((blocks, primitiveSupplier) => PROGRAM.SumAggregator(blocks, primitiveSupplier).Divide(Primitive.From(Math.Max(1, blocks.Count())))));
+                AddWords(Words("minimum", "min"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Min() ?? Primitive.From(0)));
+                AddWords(Words("maximum", "max"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Max() ?? Primitive.From(0)));
+                AddWords(Words("count"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(blocks.Count())));
+                AddAmbiguousWords(Words("number"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(blocks.Count())));
                 AddWords(Words("sum", "total"), new PropertyAggregationToken(PROGRAM.SumAggregator));
-                AddWords(Words("collection"), new PropertyAggregationToken((blocks, primitiveSupplier) => ResolvePrimitive(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
-                AddAmbiguousWords(Words("list"), new PropertyAggregationToken((blocks, primitiveSupplier) => ResolvePrimitive(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
+                AddWords(Words("collection"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
+                AddAmbiguousWords(Words("list"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
 
                 //Operations Words
                 AddWords(Words("("), new OpenParenthesisToken());

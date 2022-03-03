@@ -97,9 +97,9 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             var command = program.ParseCommand("if not all of the batteries ratio < 0.75 turn on the generators");
             Assert.IsTrue(command is ConditionalCommand);
             ConditionalCommand conditionalCommand = (ConditionalCommand)command;
-            Assert.IsTrue(conditionalCommand.condition is UniOperandVariable);
-            UniOperandVariable variable = (UniOperandVariable)conditionalCommand.condition;
-            Assert.AreEqual(UnaryOperator.REVERSE, variable.operand);
+            Assert.IsTrue(conditionalCommand.condition is UnaryOperationVariable);
+            UnaryOperationVariable variable = (UnaryOperationVariable)conditionalCommand.condition;
+            Assert.AreEqual(UnaryOperator.REVERSE, variable.operation);
             Assert.IsTrue(variable.a is AggregateConditionVariable);
             AggregateConditionVariable condition = (AggregateConditionVariable)variable.a;
             Assert.IsTrue(condition.entityProvider is BlockTypeSelector);

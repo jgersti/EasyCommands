@@ -43,12 +43,12 @@ namespace IngameScript {
                 comparator = comp;
             }
 
-            public Primitive GetValue() => ResolvePrimitive(comparator(a.GetValue(), b.GetValue()));
+            public Primitive GetValue() => Primitive.From(comparator(a.GetValue(), b.GetValue()));
         }
 
         public class TernaryConditionVariable : IVariable {
             public IVariable condition, positiveValue, negativeValue;
-            public Primitive GetValue() => CastBoolean(condition.GetValue()) ? positiveValue.GetValue() : negativeValue.GetValue();
+            public Primitive GetValue() => condition.GetValue().AsBool() ? positiveValue.GetValue() : negativeValue.GetValue();
         }
 
         public class VectorVariable : IVariable {
@@ -56,34 +56,34 @@ namespace IngameScript {
 
             public Primitive GetValue() {
                 if (NewList(X, Y, Z).All(v => v.GetValue().returnType == Return.NUMERIC))
-                    return ResolvePrimitive(Vector(CastNumber(X.GetValue()), CastNumber(Y.GetValue()), CastNumber(Z.GetValue())));
+                    return Primitive.From(Vector(X.GetValue().AsNumber(), Y.GetValue().AsNumber(), Z.GetValue().AsNumber()));
                 throw new Exception("Invalid Variable in Vector");
             }
         }
 
-        public class UniOperandVariable : IVariable {
+        public class UnaryOperationVariable : IVariable {
             public IVariable a;
-            public UnaryOperator operand;
+            public UnaryOperator operation;
 
-            public UniOperandVariable(UnaryOperator op, IVariable v) {
-                operand = op;
+            public UnaryOperationVariable(UnaryOperator op, IVariable v) {
+                operation = op;
                 a = v;
             }
 
-            public Primitive GetValue() => PROGRAM.PerformOperation(operand, a.GetValue());
+            public Primitive GetValue() => Operations.Evaluate(operation, a.GetValue());
         }
 
-        public class BiOperandVariable : IVariable {
+        public class BinaryOperationVariable : IVariable {
             public IVariable a, b;
-            public BinaryOperator operand;
+            public BinaryOperator operation;
 
-            public BiOperandVariable(BinaryOperator op, IVariable left, IVariable right) {
-                operand = op;
+            public BinaryOperationVariable(BinaryOperator op, IVariable left, IVariable right) {
+                operation = op;
                 a = left;
                 b = right;
             }
 
-            public Primitive GetValue() => PROGRAM.PerformOperation(operand, a.GetValue(), b.GetValue());
+            public Primitive GetValue() => Operations.Evaluate(operation, a.GetValue(), b.GetValue());
         }
 
         public class ListAggregateConditionVariable : IVariable {
@@ -100,8 +100,8 @@ namespace IngameScript {
             }
 
             public Primitive GetValue() {
-                var list = CastList(expectedList.GetValue());
-                return ResolvePrimitive(Evaluate(list.keyedValues.Count, list.keyedValues.Count(v => comparator(v.GetValue(), comparisonValue.GetValue())), aggregationMode));
+                var list = expectedList.GetValue().AsList();
+                return Primitive.From(Evaluate(list.keyedValues.Count, list.keyedValues.Count(v => comparator(v.GetValue(), comparisonValue.GetValue())), aggregationMode));
             }
         }
 
@@ -118,7 +118,7 @@ namespace IngameScript {
 
             public Primitive GetValue() {
                 var blocks = entityProvider.GetEntities();
-                return ResolvePrimitive(Evaluate(blocks.Count, blocks.Count(block => blockCondition(block, entityProvider.GetBlockType())), aggregationMode));
+                return Primitive.From(Evaluate(blocks.Count, blocks.Count(block => blockCondition(block, entityProvider.GetBlockType())), aggregationMode));
             }
         }
 
@@ -160,7 +160,7 @@ namespace IngameScript {
                 try {
                     return PROGRAM.GetVariable(value).GetValue();
                 } catch(Exception) {
-                    return ResolvePrimitive(value);
+                    return Primitive.From(value);
                 }
             }
         }
@@ -174,7 +174,7 @@ namespace IngameScript {
                 aggregator = agg;
             }
 
-            public Primitive GetValue() => aggregator(CastList(expectedList.GetValue()).keyedValues, v => ((IVariable)v).GetValue());
+            public Primitive GetValue() => aggregator(expectedList.GetValue().AsList().keyedValues, v => ((IVariable)v).GetValue());
         }
 
         public class IndexVariable : IVariable {
@@ -185,12 +185,12 @@ namespace IngameScript {
             }
 
             public Primitive GetValue() {
-                KeyedList list = CastList(expectedIndex.GetValue());
+                KeyedList list = expectedIndex.GetValue().AsList();
                 if (list.keyedValues.Count == 1) {
-                    Primitive onlyValue = list.GetValue(ResolvePrimitive(0)).GetValue();
-                    if (onlyValue.returnType == Return.LIST) list = CastList(onlyValue);
+                    Primitive onlyValue = list.GetValue(Primitive.From(0)).GetValue();
+                    if (onlyValue.returnType == Return.LIST) list = onlyValue.AsList();
                 }
-                return ResolvePrimitive(list);
+                return Primitive.From(list);
             }
         }
 
@@ -203,22 +203,22 @@ namespace IngameScript {
             }
 
             public Primitive GetValue() {
-                var list = CastList(expectedList.GetValue());
+                var list = expectedList.GetValue().AsList();
                 var values = GetIndexValues()
                     .Select(p => list.GetValue(p))
                     .ToList();
-                if (values.Count == 0) return ResolvePrimitive(list);
-                return values.Count == 1 ? values[0].GetValue() : ResolvePrimitive(NewKeyedList(values));
+                if (values.Count == 0) return Primitive.From(list);
+                return values.Count == 1 ? values[0].GetValue() : Primitive.From(NewKeyedList(values));
             }
 
             public void SetValue(IVariable value) {
-                var list = CastList(expectedList.GetValue());
+                var list =expectedList.GetValue().AsList();
                 var indexes = GetIndexValues();
-                if (indexes.Count == 0) indexes.AddRange(Range(0, list.keyedValues.Count).Select(i => ResolvePrimitive(i)));
+                if (indexes.Count == 0) indexes.AddRange(Range(0, list.keyedValues.Count).Select(i => Primitive.From(i)));
                 indexes.ForEach(index => list.SetValue(index, value));
             }
 
-            List<Primitive> GetIndexValues() => CastList(index.GetValue()).keyedValues.Select(i => i.GetValue()).ToList();
+            List<Primitive> GetIndexValues() => index.GetValue().AsList().keyedValues.Select(i => i.GetValue()).ToList();
         }
 
         public class KeyedVariable : IVariable, IComparable<KeyedVariable>, IEquatable<KeyedVariable> {
@@ -231,10 +231,10 @@ namespace IngameScript {
 
             public bool HasKey() => Key != null;
 
-            public String GetKey() => Key != null ? CastString(Key.GetValue()) : null;
+            public String GetKey() => Key?.GetValue().AsString();
             public Primitive GetValue() => Value.GetValue();
 
-            public String Print() => (HasKey() ? Wrap(GetKey()) + "->" : "") + Wrap(CastString(GetValue()));
+            public String Print() => (HasKey() ? Wrap(GetKey()) + "->" : "") + Wrap(GetValue().AsString());
 
             public KeyedVariable DeepCopy() => new KeyedVariable(Key == null ? null : GetStaticVariable(Key.GetValue().DeepCopy().value), GetStaticVariable(Value.GetValue().DeepCopy().value));
 

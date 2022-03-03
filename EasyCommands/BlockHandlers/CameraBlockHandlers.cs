@@ -21,9 +21,9 @@ namespace IngameScript {
     partial class Program {
         public class CameraBlockHandler : FunctionalBlockHandler<IMyCameraBlock> {
             public CameraBlockHandler() {
-                AddBooleanHandler(Property.TRIGGER, (b) => CastVector(GetPropertyValue(b, new PropertySupplier(Property.TARGET+""))) != Vector3D.Zero, (b, v) => b.EnableRaycast = v);
+                AddBooleanHandler(Property.TRIGGER, (b) => GetPropertyValue(b, new PropertySupplier(Property.TARGET+"")).AsVector() != Vector3D.Zero, (b, v) => b.EnableRaycast = v);
                 AddNumericHandler(Property.RANGE, GetRange, (b, v) => SetCustomProperty(b, "Range", "" + v), 100);
-                AddVectorHandler(Property.TARGET_VELOCITY, (b) => GetVector(GetCustomProperty(b, "Velocity")) ?? Vector3D.Zero);
+                AddVectorHandler(Property.TARGET_VELOCITY, (b) => ParseVector(GetCustomProperty(b, "Velocity")) ?? Vector3D.Zero);
                 //TODO: Use setter to scan specific vector?
                 AddVectorHandler(Property.TARGET, (b) => {
                     var range = (double)GetRange(b);
@@ -37,7 +37,7 @@ namespace IngameScript {
                             SetCustomProperty(b, "Velocity", VectorToString(detectedEntity.Velocity));
                         }
                     }
-                    return GetVector(GetCustomProperty(b, "Target") ?? "") ?? Vector3D.Zero;
+                    return ParseVector(GetCustomProperty(b, "Target") ?? "") ?? Vector3D.Zero;
                 });
                 defaultPropertiesByPrimitive[Return.VECTOR] = Property.TARGET;
                 defaultPropertiesByDirection[Direction.UP] = Property.RANGE;

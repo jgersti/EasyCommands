@@ -48,7 +48,7 @@ namespace IngameScript {
 
         public class RotorAngleHandler : PropertyHandler<IMyMotorStator> {
             public RotorAngleHandler() {
-                Get = (b, p) => ResolvePrimitive(b.Angle * (float)(180 / Math.PI));
+                Get = (b, p) => Primitive.From(b.Angle * (float)(180 / Math.PI));
                 GetDirection = (b, p, d) => Get(b, p);
                 Set = (b, p, v) => RotateToValue(b, v);
                 SetDirection = (b, p, d, v) => RotateToValue(b, v, d);
@@ -57,7 +57,7 @@ namespace IngameScript {
                     if (d == Direction.COUNTERCLOCKWISE || d == Direction.DOWN) RotateToValue(b, Get(b, p).Minus(v), d);
                 };
                 IncrementValue = (b, p, v) => IncrementValueDirection(b, p, Direction.CLOCKWISE, v);
-                Increment = (b, p) => IncrementValue(b, p, ResolvePrimitive(10));
+                Increment = (b, p) => IncrementValue(b, p, Primitive.From(10));
                 Move = (b, p, d) => {
                     if (d == Direction.CLOCKWISE) b.TargetVelocityRPM = Math.Abs(b.TargetVelocityRPM);
                     if (d == Direction.COUNTERCLOCKWISE) b.TargetVelocityRPM = -Math.Abs(b.TargetVelocityRPM);
@@ -71,7 +71,7 @@ namespace IngameScript {
                 throw new Exception("Cannot rotate rotor to non-numeric value: " + primitive);
             }
 
-            float value = CastNumber(primitive);
+            float value = primitive.AsNumber();
             float newValue = GetCorrectedAngle(value);
 
             //TODO: We might find that in some cases, it's faster to go the other way.
@@ -89,7 +89,7 @@ namespace IngameScript {
                 throw new Exception("Cannot rotate rotor to non-numeric value: " + primitive);
             }
 
-            float value = GetCorrectedAngle(CastNumber(primitive));
+            float value = GetCorrectedAngle(primitive.AsNumber());
             float currentAngle = rotor.Angle * (180 / (float)Math.PI);
 
             switch (direction) {

@@ -35,16 +35,16 @@ namespace IngameScript {
         public class TerminalPropertyHandler<T> : SimplePropertyHandler<T> where T : class, IMyTerminalBlock {
             public TerminalPropertyHandler(String propertyId, Primitive delta) : this(new PropertySupplier(propertyId), delta) { }
             public TerminalPropertyHandler(PropertySupplier propertySupplier, Primitive delta) : base(
-                (b, p) => { var property = GetTerminalProperty(b, propertySupplier); return ResolvePrimitive(TerminalPropertyConversions[property.TypeName].GetValue(property, b));  },
+                (b, p) => { var property = GetTerminalProperty(b, propertySupplier); return Primitive.From(TerminalPropertyConversions[property.TypeName].GetValue(property, b));  },
                 (b, p, v) => { var property = GetTerminalProperty(b, propertySupplier); TerminalPropertyConversions[property.TypeName].SetValue(property, b, v); },
                 delta) { }
 
             static Dictionary<String, TerminalPropertyConverter> TerminalPropertyConversions = NewDictionary(
-                KeyValuePair("StringBuilder", PropertyConverter((p, b) => p.As<StringBuilder>().GetValue(b).ToString(), (p, b, v) => p.As<StringBuilder>().SetValue(b, new StringBuilder(CastString(v))))),
-                KeyValuePair("Boolean", PropertyConverter((p, b) => p.AsBool().GetValue(b), (p, b, v) => p.AsBool().SetValue(b, CastBoolean(v)))),
-                KeyValuePair("Single", PropertyConverter((p, b) => p.AsFloat().GetValue(b), (p, b, v) => p.AsFloat().SetValue(b, CastNumber(v)))),
-                KeyValuePair("Int64", PropertyConverter((p, b) => (float)p.As<long>().GetValue(b), (p, b, v) => p.As<long>().SetValue(b, (long)CastNumber(v)))),
-                KeyValuePair("Color", PropertyConverter((p, b) => p.AsColor().GetValue(b), (p, b, v) => p.AsColor().SetValue(b, CastColor(v))))
+                KeyValuePair("Boolean", PropertyConverter((p, b) => p.AsBool().GetValue(b), (p, b, v) => p.AsBool().SetValue(b, v.AsBool()))),
+                KeyValuePair("Single", PropertyConverter((p, b) => p.AsFloat().GetValue(b), (p, b, v) => p.AsFloat().SetValue(b, v.AsNumber()))),
+                KeyValuePair("Color", PropertyConverter((p, b) => p.AsColor().GetValue(b), (p, b, v) => p.AsColor().SetValue(b, v.AsColor()))),
+                KeyValuePair("Int64", PropertyConverter((p, b) => (float)p.As<long>().GetValue(b), (p, b, v) => p.As<long>().SetValue(b, (long)v.AsNumber()))),
+                KeyValuePair("StringBuilder", PropertyConverter((p, b) => p.As<StringBuilder>().GetValue(b).ToString(), (p, b, v) => p.As<StringBuilder>().SetValue(b, new StringBuilder(v.AsString()))))
             );
 
             static ITerminalProperty GetTerminalProperty(T block, PropertySupplier propertySupplier) =>
@@ -76,8 +76,8 @@ namespace IngameScript {
 
                 AddPropertyHandler(ValueProperty.ACTION, new SimplePropertyHandler<T>(
                     (b, p) => p.attributeValue.GetValue(),
-                    (b, p, v) => PROGRAM.actionCache.GetOrCreate(b.GetType(), CastString(p.attributeValue.GetValue()), s => b.GetActionWithName(s)).Apply(b),
-                    ResolvePrimitive(0)));
+                    (b, p, v) => PROGRAM.actionCache.GetOrCreate(b.GetType(), p.attributeValue.GetValue().AsString(), s => b.GetActionWithName(s)).Apply(b),
+                    Primitive.From(0)));
 
                 AddDirectionHandlers(Property.DIRECTION, Direction.FORWARD,
                     TypeHandler(VectorHandler(b => b.WorldMatrix.Forward), Direction.FORWARD),
@@ -99,7 +99,7 @@ namespace IngameScript {
                 try {
                     return base.GetPropertyHandler(property);
                 } catch (Exception) {
-                    return new TerminalPropertyHandler<T>(property, ResolvePrimitive(1));
+                    return new TerminalPropertyHandler<T>(property, Primitive.From(1));
                 }
             }
 
@@ -128,7 +128,7 @@ namespace IngameScript {
                     .Select(line => line.Split('='))
                     .ToDictionary(token => token[0], token => token[1]);
 
-            public PropertyHandler<T> TerminalPropertyHandler(String propertyId, object delta) => new TerminalPropertyHandler<T>(propertyId, ResolvePrimitive(delta));
+            public PropertyHandler<T> TerminalPropertyHandler(String propertyId, object delta) => new TerminalPropertyHandler<T>(propertyId, Primitive.From(delta));
         }
         public class FunctionalBlockHandler<T> : TerminalBlockHandler<T> where T : class, IMyFunctionalBlock {
             public FunctionalBlockHandler() {

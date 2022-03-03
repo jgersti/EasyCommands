@@ -32,5 +32,27 @@ namespace IngameScript {
         public enum BinaryOperator { ADD, SUBTRACT, MULTIPLY, DIVIDE, MOD, AND, OR, COMPARE, DOT, EXPONENT, RANGE, CAST, CONTAINS, SPLIT, JOIN, ROUND };
         public enum UnaryOperator { REVERSE, ABS, SQRT, SIN, COS, TAN, ASIN, ACOS, ATAN, ROUND, KEYS, VALUES, TICKS, SORT, LN, RANDOM, SHUFFLE, SIGN, CAST, TYPE};
         public enum AggregationMode {ANY, ALL, NONE }
+
+        //Human readable strings for error messages
+        static readonly Dictionary<Return, string> ReturnToString = NewDictionary(
+            KeyValuePair(Return.BOOLEAN, "boolean"),
+            KeyValuePair(Return.NUMERIC, "number"),
+            KeyValuePair(Return.STRING, "string"),
+            KeyValuePair(Return.VECTOR, "vector"),
+            KeyValuePair(Return.COLOR, "color"),
+            KeyValuePair(Return.LIST, "list")
+        );
+
+        static readonly Dictionary<UnaryOperator, string> UnaryOperatorToString = NewDictionary(
+            KeyValuePair(UnaryOperator.CAST, "cast"),
+            KeyValuePair(UnaryOperator.ROUND, "round"),
+            KeyValuePair(UnaryOperator.REVERSE, "negate")
+        );
+
+        static readonly Dictionary<BinaryOperator, string> BinaryOperatorToString = NewDictionary(
+            KeyValuePair(BinaryOperator.CAST, "cast"),
+            KeyValuePair(BinaryOperator.ROUND, "round"),
+            KeyValuePair(BinaryOperator.COMPARE, "compare")
+        );
     }
 }

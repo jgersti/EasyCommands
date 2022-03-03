@@ -29,7 +29,7 @@ namespace IngameScript {
             }
 
             Vector3D GetTarget(IMyLargeTurretBase turret) =>
-                GetVector(GetCustomProperty(turret, "target") ?? "") ?? (turret.HasTarget ? GetPosition(turret.GetTargetedEntity()) : Vector3D.Zero);
+                ParseVector(GetCustomProperty(turret, "target") ?? "") ?? (turret.HasTarget ? GetPosition(turret.GetTargetedEntity()) : Vector3D.Zero);
 
             void ResetTarget(IMyLargeTurretBase turret) {
                 //Idle Movement setting gets reset when calling ResetTargetingToDefault(), so need to re-apply it.

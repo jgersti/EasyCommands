@@ -136,7 +136,7 @@ namespace IngameScript {
         static RuleProcessor<BinaryOperandToken> BiOperandProcessor(int tier) =>
             TwoValueRule(Type<BinaryOperandToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                 (operand, left, right) => operand.tier == tier && AllSatisfied(left, right),
-                (operand, left, right) => new VariableToken(new BiOperandVariable(operand.value, left.value, right.value)));
+                (operand, left, right) => new VariableToken(new BinaryOperationVariable(operand.value, left.value, right.value)));
 
         static RuleProcessor<SelectorToken> BlockCommandProcessor() {
             var assignmentProcessor = eitherList<AssignmentToken>(true);
@@ -171,7 +171,7 @@ namespace IngameScript {
                 }
 
                 if (notProcessor.Satisfied()) {
-                    variableValue = new UniOperandVariable(UnaryOperator.REVERSE, variableValue);
+                    variableValue = new UnaryOperationVariable(UnaryOperator.REVERSE, variableValue);
                     propertySupplier = propertySupplier.WithPropertyValue(variableValue);
                 }
 
