@@ -122,15 +122,6 @@ namespace IngameScript {
             }
         }
 
-        public static bool Evaluate(int count, int matches, AggregationMode aggregation) {
-            switch (aggregation) {
-                case AggregationMode.ALL: return count > 0 && matches == count;
-                case AggregationMode.ANY: return matches > 0;
-                case AggregationMode.NONE: return matches == 0;
-                default: throw new Exception("Unsupported Aggregation Mode");
-            }
-        }
-
         public class AggregatePropertyVariable : IVariable {
             public Aggregator aggregator;
             public ISelector entityProvider;
