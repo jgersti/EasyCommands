@@ -409,7 +409,6 @@ namespace IngameScript {
                 Primitive ignored;
                 return Primitive.TryParse(token, out ignored) || nextPass == null ? Once(token) : nextPass(token);
             }
-
             static IEnumerable<string> SeperatorPass(string command, string[] separators, Pass nextPass = null) {
                 var newCommand = command;
                 foreach (var s in separators) newCommand = newCommand.Replace(s, " " + s + " ");
