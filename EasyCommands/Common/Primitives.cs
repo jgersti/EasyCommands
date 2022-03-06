@@ -61,6 +61,7 @@ namespace IngameScript {
             public delegate object Converter(Primitive p);
             public static KeyValuePair<T, Converter> CastFunction<T>(T r, Converter func) => KeyValuePair(r, func);
             static Converter Failure(Return returnType) => p => { throw new Exception("Cannot convert " + ReturnToString[p.returnType] + " " + p.AsString() + " to " + ReturnToString[returnType]); };
+
             static readonly Dictionary<Type, Dictionary<Return, Converter>> CastFunctions = NewDictionary(
                 KeyValuePair(typeof(bool), NewDictionary(
                     CastFunction(Return.BOOLEAN, p => p.value),
@@ -101,6 +102,9 @@ namespace IngameScript {
                 KeyValuePair(typeof(KeyedList), NewDictionary(
                     CastFunction(Return.LIST, p => p.value),
                     CastFunction(Return.DEFAULT, p => NewKeyedList(Once(GetStaticVariable(p.value))))
+                )),
+                KeyValuePair(typeof(object), NewDictionary(
+                    CastFunction(Return.DEFAULT, p => p.value)
                 ))
             );
         }

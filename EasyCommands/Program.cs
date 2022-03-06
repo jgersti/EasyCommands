@@ -62,17 +62,17 @@ namespace IngameScript {
 
             asyncThreadQueue.Clear();
             threadQueue.Clear();
-            globalVariables = NewDictionary(
-                KeyValuePair("pi", GetStaticVariable(Math.PI)),
-                KeyValuePair("e", GetStaticVariable(Math.E)),
-                KeyValuePair("empty", EmptyList()),
-                KeyValuePair("x", GetStaticVariable(Vector(1 ,0, 0))),
-                KeyValuePair("y", GetStaticVariable(Vector(0, 1, 0))),
-                KeyValuePair("z", GetStaticVariable(Vector(0, 0, 1))),
-                KeyValuePair("r", GetStaticVariable(Vector(1 ,0, 0))),
-                KeyValuePair("g", GetStaticVariable(Vector(0, 1, 0))),
-                KeyValuePair("b", GetStaticVariable(Vector(0, 0, 1)))
-            );
+            globalVariables.Clear();
+
+            SetGlobalVariable("pi", GetStaticVariable(Math.PI));
+            SetGlobalVariable("e", GetStaticVariable(Math.E));
+            SetGlobalVariable("empty", EmptyList());
+            SetGlobalVariable("x", GetStaticVariable(Vector(1, 0, 0)));
+            SetGlobalVariable("y", GetStaticVariable(Vector(0, 1, 0)));
+            SetGlobalVariable("z", GetStaticVariable(Vector(0, 0, 1)));
+            SetGlobalVariable("r", GetStaticVariable(Vector(1, 0, 0)));
+            SetGlobalVariable("g", GetStaticVariable(Vector(0, 1, 0)));
+            SetGlobalVariable("b", GetStaticVariable(Vector(0, 0, 1)));
         }
 
         public void BroadCastListenerAction(Func<IMyBroadcastListener, bool> filter, Action<IMyBroadcastListener> action) {
