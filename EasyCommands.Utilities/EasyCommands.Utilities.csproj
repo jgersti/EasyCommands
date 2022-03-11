@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -24,7 +25,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -50,8 +50,15 @@
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>F:\SteamLibrary\SteamApps\common\SpaceEngineers\Bin64\System.Collections.Immutable.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -61,6 +68,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\Extensions.cs" />
+    <Compile Include="Pika\AST.cs" />
+    <Compile Include="Pika\Grammar\Rule.cs" />
+    <Compile Include="Pika\Grammar\Grammar.cs" />
+    <Compile Include="Pika\Grammar\Meta.cs" />
+    <Compile Include="Pika\Memoization.cs" />
+    <Compile Include="Pika\Grammar\Clause\Terminals.cs" />
+    <Compile Include="Pika\Grammar\Clause\Nonterminals.cs" />
+    <Compile Include="Pika\Grammar\Clause\Misc.cs" />
+    <Compile Include="Pika\Grammar\Clause\Clause.cs" />
+    <Compile Include="Pika\Utils\ClauseFactory.cs" />
+    <Compile Include="Pika\Utils\IntervalUnion.cs" />
+    <Compile Include="Pika\Utils\ParserInfo.cs" />
+    <Compile Include="Pika\Utils\StringUtils.cs" />
+    <Compile Include="Pika\Utils\GrammarUtils.cs" />
+    <Compile Include="Pika\Utils\TreeUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

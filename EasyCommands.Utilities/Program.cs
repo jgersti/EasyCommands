@@ -9,16 +9,40 @@ using System.Reflection;
 namespace EasyCommands.Utilities {
     class Program {
         static void Main(string[] args) {
+            string rawGrammar = @"Program <- Statement+;
+Statement <- var:[a-z]+ '=' E ';';
+E[4] <- '(' E ')';
+E[3] <- num:[0-9]+ / sym:[a-z]+;
+E[2] <- arith:(op:'-' E);
+E[1,L] <- arith:(E op:('*' / '/') E);
+E[0,L] <- arith:(E op:('+' / '-') E);"; //.Replace("\r", null);
+
+            Console.WriteLine(rawGrammar);
+
+            string rawInput = @"discriminant=b*b-4*a*c;"; //.Replace("\r", null);
+
+            string topRule = "Program";
+            string[] recovery = new[] { topRule, "Statement" };
+
+            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
+            var table = grammar.Parse(rawInput);
+
+            Pika.Utils.ParserInfo.PrintParseResult(topRule, table, recovery, false);
+            //Pika.Utils.ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
+            //Console.WriteLine();
+            //Pika.Utils.ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
+        }
+
+        static void ExecuteSomething() {
             foreach (var p in Parser.parameterProcessorsByParameterType) {
                 var name = p.Key.GetGenericName();
                 Console.WriteLine($"{name}\n{"".PadRight(name.Length, '-')}\n");
-                foreach(var s in RulesToString(p))
+                foreach (var s in RulesToString(p))
                     Console.WriteLine(s);
             }
         }
 
         static IEnumerable<string> RulesToString(IEnumerable<IParameterProcessor> rules) => rules.Select(RuleToString);
-
         static string RuleToString(IParameterProcessor processor) =>
             $"{processor.Rank}. {processor.GetType().GetGenericName().Replace("Processor", null)}\n\t{string.Join("\n\t", GetPattern((dynamic)processor))}\n";
 
