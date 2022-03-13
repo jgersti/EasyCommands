@@ -115,7 +115,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
             int cur = key.Start;
             List<Match> matches = null;
             for (int i = 0; i < SubClauses.Count(); ++i) {
-                var match = table.LookUpBestMatch(new Key(SubClauses.ElementAt(i).Clause, key.Start));
+                var match = table.LookUpBestMatch(new Key(SubClauses.ElementAt(i).Clause, cur));
                 if (match == null)
                     return null;
                 if (matches == null)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,13 +10,13 @@ namespace EasyCommands.Utilities.Pika.Utils {
     public static class ParserInfo {
         public static void PrintClauses(Grammar.Grammar grammar)
             => grammar.AllClauses
-                .Select((c, i) => $"{i:D3}: {c.ToStringWithRuleNames()}")
+                .Select((c, i) => $"{i,3:D} : {c.ToStringWithRuleNames()}")
                 .Reverse()
                 .ForEach(s => Console.WriteLine(s));
 
         public static void PrintRules(Grammar.Grammar grammar)
             => grammar.AllRules
-                .Select((r, i) => $"{i:D3}: {r}")
+                .Select((r, i) => $"{i,3:D} : {r}")
                 .ForEach(s => Console.WriteLine(s));
 
         public static void PrintMemoTable(Table table) {
@@ -24,7 +24,7 @@ namespace EasyCommands.Utilities.Pika.Utils {
             int marginWidth = 0;
             for (int i = 0; i < table.Grammar.AllClauses.Count(); ++i) {
                 buffers[i] = new StringBuilder();
-                buffers[i].Append($"{table.Grammar.AllClauses.Count() - 1 - i:D3} : ");
+                buffers[i].Append($"{table.Grammar.AllClauses.Count() - 1 - i,3:D} : ");
                 Clause clause = table.Grammar.AllClauses.ElementAt(table.Grammar.AllClauses.Count() - 1 - i);
                 if (clause is Terminal)
                     buffers[i].Append("[terminal] ");
@@ -88,7 +88,7 @@ namespace EasyCommands.Utilities.Pika.Utils {
                         => new SortedDictionary<int, IDictionary<int, Match>>(Comparer<int>.Create((x, y) => y.CompareTo(x))));
 
                 var matchesForClauseIdx = matchesForDepth.GetOrCreateValue(match.Key.Clause.Rank, k
-                        => new SortedDictionary<int, Match>(Comparer<int>.Create((x, y) => y.CompareTo(x))));
+                        => new SortedDictionary<int, Match>());
 
                 matchesForClauseIdx[match.Key.Start] = match;
                 return cycleDepth;
@@ -124,58 +124,40 @@ namespace EasyCommands.Utilities.Pika.Utils {
             // Assign matches to rows
             List<IDictionary<int, Match>> matchesForRow = new List<IDictionary<int, Match>>();
             List<Clause> clauseForRow = new List<Clause>();
-            foreach (var matchesForDepth in cycleDepthToMatches.Values) {
-                foreach (var matchesForClauseIdxEnt in matchesForDepth) {
-                    clauseForRow.Add(table.Grammar.AllClauses.ElementAt(matchesForClauseIdxEnt.Key));
-                    matchesForRow.Add(matchesForClauseIdxEnt.Value);
-                }
-            }
+            cycleDepthToMatches.Values
+                .SelectMany(dict => dict)
+                .ForEach(kv => {
+                    clauseForRow.Add(table.Grammar.AllClauses.ElementAt(kv.Key));
+                    matchesForRow.Add(kv.Value);
+                });
 
-            var rowLabel = new StringBuilder[clauseForRow.Count()];
-            var rowLabelMaxWidth = 0;
-            for (var i = 0; i < clauseForRow.Count(); i++) {
-                var clause = clauseForRow.ElementAt(i);
-                rowLabel[i] = new StringBuilder();
-                if (clause is Terminal) {
-                    rowLabel[i].Append("[terminal] ");
-                }
-                if (clause.CanMatchZeroChars) {
-                    rowLabel[i].Append("[canMatchZeroChars] ");
-                }
-                rowLabel[i].Append(clause.ToStringWithRuleNames());
-                rowLabel[i].Append("  ");
-                rowLabelMaxWidth = Math.Max(rowLabelMaxWidth, rowLabel[i].Length);
-            }
+            var rowLabel = clauseForRow.Select(c
+                => new StringBuilder()
+                    .Append(c is Terminal ? "[terminal] " :  null)
+                    .Append(c.CanMatchZeroChars ? "[canMatchZeroChars] " : null)
+                    .Append(c.ToStringWithRuleNames())
+                    .Append("  ")).ToArray();
 
-            for (var i = 0; i < clauseForRow.Count(); i++) {
-                var clause = clauseForRow.ElementAt(i);
-                var clauseIdx = clause.Rank;
+            var rowLabelMaxWidth = rowLabel.Max(r => r.Length);
+
+            clauseForRow.Select(c => c.Rank).ForEach((r, i) => {
                 string label = rowLabel[i].ToString();
-                rowLabel[i].Clear();
-                for (int j = 0, jj = rowLabelMaxWidth - label.Length; j < jj; j++)
-                    rowLabel[i].Append(' ');
+                rowLabel[i].Clear().Append(' ', rowLabelMaxWidth - label.Length).Append($"{r,3:D} : ").Append(label);
+            });
 
-                rowLabel[i].Append($"{clauseIdx:D3} : ");
-                rowLabel[i].Append(label);
-            }
-            var emptyRowLabel = new StringBuilder();
-            for (int i = 0, ii = rowLabelMaxWidth + 6; i < ii; i++) {
-                emptyRowLabel.Append(' ');
-            }
-            var edgeMarkers = new StringBuilder();
-            edgeMarkers.Append(' ');
-            for (int i = 1, ii = table.Input.Length * 2; i < ii; i++) {
-                edgeMarkers.Append('\u2591');
-            }
-            // Append one char for last column boundary, and two extra chars for zero-length matches past end of string
-            edgeMarkers.Append("   ");
+            var emptyRowLabel = new StringBuilder()
+                .Append(' ', rowLabelMaxWidth + 6);
+            var edgeMarkers = new StringBuilder()
+                .Append(' ')
+                .Append('\u2591', table.Input.Length * 2 - 1)
+                .Append("   ");
 
             // Add tree structure to right of row label
             for (var row = 0; row < clauseForRow.Count(); row++) {
                 var matches = matchesForRow.ElementAt(row);
 
-                StringBuilder rowTreeChars = new StringBuilder();
-                rowTreeChars.Append(edgeMarkers);
+                StringBuilder rowTreeChars = new StringBuilder()
+                    .Append(edgeMarkers);
                 var zeroLenMatchIdxs = new List<int>();
                 foreach (var match in matches.Values) {
                     var startIdx = match.Key.Start;
@@ -187,17 +169,24 @@ namespace EasyCommands.Utilities.Pika.Utils {
                     } else {
                         // Match consumes 1 or more characters
                         for (var i = startIdx; i <= endIdx; i++) {
-                            char chrLeft = rowTreeChars[i * 2];
-                            rowTreeChars[i * 2] =
-                                    i == startIdx
-                                            ? (chrLeft == '│' ? '├' : chrLeft == '┤' ? '┼' : chrLeft == '┐' ? '┬' : '┌')
-                                            : i == endIdx ? (chrLeft == '│' ? '┤' : '┐') : '─';
-                            if (i < endIdx) {
+                            var c = rowTreeChars[i * 2];
+                            if (i == startIdx)
+                                rowTreeChars[i * 2] = c == '│' ? '├'
+                                                    : c == '┤' ? '┼'
+                                                    : c == '┐' ? '┬'
+                                                               : '┌';
+                            else if (i == endIdx)
+                                rowTreeChars[i * 2] = c == '│' ? '┤'
+                                                               : '┐';
+                            else
+                                rowTreeChars[i * 2] = '─';
+
+                            if (i < endIdx)
                                 rowTreeChars[i * 2 + 1] = '─';
-                            }
                         }
                     }
                 }
+
                 Console.Write(emptyRowLabel);
                 Console.WriteLine(rowTreeChars);
 
@@ -206,24 +195,21 @@ namespace EasyCommands.Utilities.Pika.Utils {
                     var endIdx = startIdx + match.Count;
                     edgeMarkers[startIdx * 2] = '│';
                     edgeMarkers[endIdx * 2] = '│';
-                    for (int i = startIdx * 2 + 1, ii = endIdx * 2; i < ii; i++) {
-                        var c = edgeMarkers[i];
-                        if (c == '░' || c == '│') {
-                            edgeMarkers[i] = ' ';
-                        }
-                    }
+                    if (match.Count > 0)
+                        edgeMarkers
+                            .Replace('░', ' ', startIdx * 2 + 1, match.Count * 2 - 1)
+                            .Replace('│', ' ', startIdx * 2 + 1, match.Count * 2 - 1);
                 }
-                rowTreeChars.Clear();
-                rowTreeChars.Append(edgeMarkers);
-                foreach (var match in matches.Values) {
-                    var startIdx = match.Key.Start;
-                    var endIdx = startIdx + match.Count;
-                    for (int i = startIdx; i < endIdx; i++) {
-                        rowTreeChars[i * 2 + 1] = StringUtils.ReplaceNonASCII(table.Input[i]);
-                    }
-                }
-                foreach (var zeroLenMatchIdx in zeroLenMatchIdxs)
-                    rowTreeChars[zeroLenMatchIdx * 2] = '▮';
+
+                rowTreeChars
+                    .Clear()
+                    .Append(edgeMarkers);
+                matches.Values
+                    .SelectMany(m => Enumerable.Range(m.Key.Start, m.Count))
+                    .ForEach(i => rowTreeChars[i * 2 + 1] = StringUtils.ReplaceNonASCII(table.Input[i]));
+                zeroLenMatchIdxs
+                    .ForEach(i => rowTreeChars[i * 2] = '▮');
+
                 Console.Write(rowLabel[row]);
                 Console.WriteLine(rowTreeChars);
             }

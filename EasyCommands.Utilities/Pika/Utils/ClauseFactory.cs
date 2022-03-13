@@ -23,6 +23,7 @@ namespace EasyCommands.Utilities.Pika.Utils {
             => (clause is OneOrMore || clause is Nothing || clause is FollowedBy || clause is NotFollowedBy|| clause is Start)
                     ? clause
                     : new OneOrMore(clause);
+
         public static Clause FollowedBy(Clause clause) {
             if (clause is Nothing)
                 return clause;

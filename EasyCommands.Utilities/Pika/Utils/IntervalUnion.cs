@@ -26,7 +26,7 @@ namespace EasyCommands.Utilities.Pika.Utils {
             var higher = NonOverlappingRanges.Higher(newStart);
             if (higher != null && higher?.Key <= newEnd) {
                 NonOverlappingRanges.Remove(higher.Value.Key);
-                NonOverlappingRanges.Add(newStart, Math.Max(newEnd, higher.Value.Value));
+                NonOverlappingRanges[newStart] = Math.Max(newEnd, higher.Value.Value);
             } else
                 NonOverlappingRanges[newStart] = newEnd;
         }

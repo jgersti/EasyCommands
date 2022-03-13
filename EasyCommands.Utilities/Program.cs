@@ -5,32 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using static IngameScript.Program;
 using System.Reflection;
+using EasyCommands.Utilities.Pika.Utils;
 
 namespace EasyCommands.Utilities {
     class Program {
         static void Main(string[] args) {
-            string rawGrammar = @"Program <- Statement+;
-Statement <- var:[a-z]+ '=' E ';';
-E[4] <- '(' E ')';
-E[3] <- num:[0-9]+ / sym:[a-z]+;
-E[2] <- arith:(op:'-' E);
-E[1,L] <- arith:(E op:('*' / '/') E);
-E[0,L] <- arith:(E op:('+' / '-') E);"; //.Replace("\r", null);
+            Console.OutputEncoding = Encoding.UTF8;
 
-            Console.WriteLine(rawGrammar);
-
-            string rawInput = @"discriminant=b*b-4*a*c;"; //.Replace("\r", null);
-
-            string topRule = "Program";
-            string[] recovery = new[] { topRule, "Statement" };
-
-            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
-            var table = grammar.Parse(rawInput);
-
-            Pika.Utils.ParserInfo.PrintParseResult(topRule, table, recovery, false);
-            //Pika.Utils.ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
-            //Console.WriteLine();
-            //Pika.Utils.ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
+            TestExpressionGrammar();
+            //TestMetaGrammar();
+            //TestSomething('\t', '\n', '\r',' ');
+            //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+            //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
         }
 
         static void ExecuteSomething() {
@@ -41,6 +27,54 @@ E[0,L] <- arith:(E op:('+' / '-') E);"; //.Replace("\r", null);
                     Console.WriteLine(s);
             }
         }
+
+        static void TestExpressionGrammar() {
+            string rawGrammar = @"Program <- Statement+;
+Statement <- var:[a-z]+ '=' E ';';
+E[4] <- '(' E ')';
+E[3] <- num:[0-9]+ / sym:[a-z]+;
+E[2] <- arith:(op:'-' E);
+E[1,L] <- arith:(E op:('*' / '/') E);
+E[0,L] <- arith:(E op:('+' / '-') E);".Replace("\r", null);
+
+            string rawInput = @"discriminant=b*b-4*a*c;".Replace("\r", null);
+
+            string topRule = "Program";
+            string[] recovery = new[] { topRule, "Statement" };
+
+            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
+            var table = grammar.Parse(rawInput);
+
+            ParserInfo.PrintParseResult(topRule, table, recovery, false);
+        }
+
+        static void TestMetaGrammar() {
+            ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
+            Console.WriteLine();
+            ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
+        }
+
+        static void TestSomething(params char[] chars) {
+            // keep the shit sorted !
+            var buffer = new StringBuilder();
+            var diff = chars.Zip(chars.Skip(1), (x, y) => y - x).ToArray();
+            buffer.Append(StringUtils.EscapeCharRangeChar(chars[0]));
+            int i = 0;
+            while (i < diff.Length) { // diff.Length == chars.Length-1
+                if (diff[i] != 1)
+                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[++i]));
+                else {
+                    var j = i;
+                    while (j < diff.Length && diff[j] == 1) j++;
+                    if (j - i > 2)
+                        buffer.Append('-');
+                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[j]));
+                    i = j;
+                }
+            }
+            Console.WriteLine(buffer);
+        }
+
 
         static IEnumerable<string> RulesToString(IEnumerable<IParameterProcessor> rules) => rules.Select(RuleToString);
         static string RuleToString(IParameterProcessor processor) =>

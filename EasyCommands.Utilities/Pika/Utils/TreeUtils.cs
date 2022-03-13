@@ -45,17 +45,17 @@ namespace EasyCommands.Utilities.Pika.Utils {
                 buffer.Append(name).Append(" <- ");
 
             if (label != null) {
-                buffer.Append(label).Append(":");
+                buffer.Append(label).Append(':');
                 if (needsParens)
-                    buffer.Append("(");
+                    buffer.Append('(');
             }
             buffer.Append(clause);
             if (label != null && needsParens)
-                buffer.Append(")");
+                buffer.Append(')');
 
             buffer
-                .Append(":").Append(key.Start)
-                .Append("+").Append(match.Count)
+                .Append(" : ").Append(key.Start)
+                .Append('+').Append(match.Count)
                 .Append(" : \"").Append(input_short)
                 .Append("\"\n");
 

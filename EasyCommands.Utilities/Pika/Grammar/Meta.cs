@@ -173,7 +173,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
 
                 Rule(START,
                     Ast(START_AST, Char('^')))
-            }); // ==<== shit happens here
+            });
         }
 
         public static bool NeedToAddParensAroundSubClause(Clause parent, Clause child)
@@ -244,12 +244,12 @@ namespace EasyCommands.Utilities.Pika.Grammar {
         }
 
         public static Grammar Parse(string input) {
-            var table = Grammar.Parse(input); // ==<== SOMETHING IS WRONG IN THERE
+            var table = Grammar.Parse(input);
 
-            ParserInfo.PrintParseResult(GRAMMAR, table, new[] { GRAMMAR, RULE, $"{CLAUSE}[1]" }, false);
-            Console.WriteLine("\nParsed MetaGrammar:");
-            Grammar.AllClauses
-                .ForEach(c => Console.WriteLine($"    {c.ToStringWithRuleNames()}"));
+            //ParserInfo.PrintParseResult(GRAMMAR, table, new[] { GRAMMAR, RULE, $"{CLAUSE}[1]" }, false);
+            //Console.WriteLine("\nParsed meta-grammar:");
+            //Grammar.AllClauses
+            //    .ForEach(c => Console.WriteLine($"    {c.ToStringWithRuleNames()}"));
 
             ParserInfo.PrintSyntaxErrors(table.GetSyntaxErrors(GRAMMAR, RULE, $"{CLAUSE}[{clauseTypeToPrecedence[typeof(First)]}]"));
 
@@ -266,7 +266,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
             }
 
             var topMatch = topMatches.Single();
-            TreeUtils.PrintTreeView(topMatch, input);
+            // TreeUtils.PrintTreeView(topMatch, input);
 
             var topNode = new AST.Node(topLabel, topMatch, input);
             Console.WriteLine(topNode);
@@ -274,7 +274,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
             if (topNode.Any(n => !n.label.Equals(RULE_AST)))
                 throw new InvalidOperationException("Wrong node type");
 
-            return new Grammar(topNode.Select(ParseRule));
+            return new Grammar(topNode.Select(ParseRule).ToList());
         }
     }
 }

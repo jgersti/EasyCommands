@@ -78,7 +78,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
             if (key.Start < input.Length) {
                 var c = input[key.Start];
                 if ((chars?[c] ?? false) || (!invertedChars?[c] ?? false))
-                    new Match(key, 1, Memoization.Match.NO_SUBCLAUSE_MATCHES);
+                    return new Match(key, 1); // , Memoization.Match.NO_SUBCLAUSE_MATCHES);
             }
             return null;
         }
@@ -114,19 +114,19 @@ namespace EasyCommands.Utilities.Pika.Grammar {
                 if (inverted)
                     buffer.Append('^');
                 var diff = chars.Zip(chars.Skip(1), (x, y) => y - x).ToArray();
-                if (diff.Length == 0)
-                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[0]));
+                buffer.Append(StringUtils.EscapeCharRangeChar(chars[0]));
                 int i = 0;
-                while (i < diff.Length) {
-                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[i]));
-                    while (i < diff.Length && diff[i++] != 1)
-                        buffer.Append(chars[i]);
-                    var j = i;
-                    while (j < diff.Length && diff[j] == 1) j++;
-                    if(j - i > 1)
-                        buffer.Append('-');
-                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[j]));
-                    i = j+1;
+                while(i < diff.Length) { // diff.Length == chars.Length-1
+                    if (diff[i] != 1)
+                        buffer.Append(StringUtils.EscapeCharRangeChar(chars[++i]));
+                    else {
+                        var j = i;
+                        while (j < diff.Length && diff[j] == 1) j++;
+                        if (j - i > 2)
+                            buffer.Append('-');
+                        buffer.Append(StringUtils.EscapeCharRangeChar(chars[j]));
+                        i = j;
+                    }
                 }
                 buffer.Append(']');
             }
@@ -145,7 +145,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
         public override void DetermineWhetherCanMatchZeroChars() { }
         public override Match Match(Table table, Key key, string input)
             => key.Start <= input.Length - String.Length && input.IndexOf(String, key.Start, IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == key.Start
-                ? new Match(key)
+                ? new Match(key, String.Length)
                 : null;
 
         public override string ToString() => ToStringCached = ToStringCached ?? $"\"{StringUtils.EscapeString(String)}\"";
