@@ -68,6 +68,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\ObjectDumper.cs" />
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="Pika\AST.cs" />
     <Compile Include="Pika\Grammar\Rule.cs" />
@@ -108,5 +109,13 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\grammar.txt" />
+    <None Include="Resources\prototype.grammar" />
+    <Resource Include="Resources\expression.grammar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

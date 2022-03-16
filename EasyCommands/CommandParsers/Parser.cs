@@ -48,7 +48,7 @@ namespace IngameScript {
                             },
                             (p, blockType, group) => new SelectorToken(new BlockSelector(blockType.value, group != null, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
                     NoValueRule(Type<AmbiguousStringToken>,
-                        name => PROGRAM.functions.ContainsKey(name.value),
+                        name => FunctionLookup(name.value),
                         name => new FunctionDefinitionToken(() => name.value)),
                     NoValueRule(Type<AmbiguousStringToken>,
                         s => {
@@ -226,9 +226,9 @@ namespace IngameScript {
 
                 //BlockConditionProcessors
                 ThreeValueRule(Type<AndToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
-                    (p, left, with, right) => new BlockConditionToken(PROGRAM.AndCondition(left.value, right.value))),
+                    (p, left, with, right) => new BlockConditionToken(AndCondition(left.value, right.value))),
                 ThreeValueRule(Type<OrToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
-                    (p, left, with, right) => new BlockConditionToken(PROGRAM.OrCondition(left.value, right.value))),
+                    (p, left, with, right) => new BlockConditionToken(OrCondition(left.value, right.value))),
 
                 //ThatBlockConditionProcessor
                 FourValueRule(Type<ThatToken>, requiredRight<ComparisonToken>(), optionalRight<PropertySupplierToken>(), optionalRight<DirectionToken>(), optionalRight<VariableToken>(),
@@ -286,7 +286,7 @@ namespace IngameScript {
                 new BranchingProcessor<SelectorToken>(
                     BlockCommandProcessor(),
                     TwoValueRule(Type<SelectorToken>, requiredEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
-                        (s, p, d) => new VariableToken(new AggregatePropertyVariable(PROGRAM.SumAggregator, s.value, p.value.WithDirection(d?.value)))),
+                        (s, p, d) => new VariableToken(new AggregatePropertyVariable(SumAggregator, s.value, p.value.WithDirection(d?.value)))),
                     TwoValueRule(Type<SelectorToken>, optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
                         (s, p, d) => AnyNotNull(p.GetValue(), d.GetValue()),
                         (s, p, d) => {
@@ -361,6 +361,9 @@ namespace IngameScript {
                     ConvertConditionalCommand)
             };
 
+            public static Action<string> Logger;
+            public static Func<string, bool> FunctionLookup;
+
             static Parser() {
                 for (int i = 0; i < parameterProcessors.Count; i++)
                     parameterProcessors[i].Rank = i;
@@ -375,13 +378,15 @@ namespace IngameScript {
             /// branches can be re-processed to see if a correct parse results from the alternate branches.
             /// This can continue until no alternate branches are returned.
             /// </summary>
-            /// <param name="commandParameters"></param>
+            /// <param name="tokens"></param>
             /// <returns></returns>
-            public static List<List<IToken>> ApplyRules(List<IToken> commandParameters) {
+            public static List<List<IToken>> ApplyRules(List<IToken> tokens) {
                 var sortedProcessors = new List<IParameterProcessor>();
 
                 var branches = NewList<List<IToken>>();
-                AddProcessors(sortedProcessors, commandParameters);
+                AddProcessors(sortedProcessors, tokens);
+
+                Logger?.Invoke($"input: {string.Join(" ", tokens)}");
 
                 int processorIndex = 0;
                 while (processorIndex < sortedProcessors.Count) {
@@ -389,11 +394,11 @@ namespace IngameScript {
                     bool processed = false;
 
                     IParameterProcessor current = sortedProcessors[processorIndex];
-                    for (int i = commandParameters.Count - 1; i >= 0; i--) {
-                        if (current.CanProcess(commandParameters[i])) {
-                            List<IToken> finalParameters;
-                            if (current.Process(commandParameters, i, out finalParameters, branches)) {
-                                AddProcessors(sortedProcessors, finalParameters);
+                    for (int i = tokens.Count - 1; i >= 0; i--) {
+                        if (current.CanProcess(tokens[i])) {
+                            List<IToken> resultTokens;
+                            if (current.Process(tokens, i, out resultTokens, branches)) {
+                                AddProcessors(sortedProcessors, resultTokens);
                                 processed = true;
                                 break;
                             } else
@@ -402,6 +407,7 @@ namespace IngameScript {
                     }
 
                     if (processed) {
+                        Logger?.Invoke($"{current.Rank,5:D}: {string.Join(" ", tokens)}");
                         processorIndex = 0;
                         continue;
                     }
@@ -415,7 +421,7 @@ namespace IngameScript {
                 return branches;
             }
 
-            public static T ParseParameters<T>(List<IToken> parameters) where T : class, IToken {
+            public static T ParseTokens<T>(List<IToken> parameters) where T : class, IToken {
                 var branches = NewList(parameters);
                 while (branches.Count > 0) {
                     branches.AddRange(ApplyRules(branches[0]));
@@ -430,8 +436,7 @@ namespace IngameScript {
 
             static void AddProcessors(List<IParameterProcessor> sortedProcessors, List<IToken> types) {
                 sortedProcessors.AddRange(types
-                    .Select(t => t.GetType())
-                    .SelectMany(t => parameterProcessorsByParameterType[t])
+                    .SelectMany(t => parameterProcessorsByParameterType[t.GetType()])
                     .Except(sortedProcessors));
                 sortedProcessors.Sort();
             }

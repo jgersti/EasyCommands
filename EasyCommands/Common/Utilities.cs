@@ -44,6 +44,7 @@ namespace IngameScript {
 
         // misc stuff
         static T findLast<T>(List<IToken> parameters) where T : class, IToken => parameters.OfType<T>().LastOrDefault();
+        static T identitiy<T>(T t) => t;
 
         // Generate enumerations of words
         static IEnumerable<string> Words(params string[] words) => words;

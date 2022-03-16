@@ -20,7 +20,7 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
         public delegate Primitive Aggregator(IEnumerable<object> blocks, Func<object,Primitive> primitiveSupplier);
-        public Aggregator SumAggregator = (blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Aggregate((Primitive)null, (a, b) => a?.Plus(b) ?? b) ?? Primitive.From(0);
+        public static Aggregator SumAggregator = (blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Aggregate((Primitive)null, (a, b) => a?.Plus(b) ?? b) ?? Primitive.From(0);
 
         public static bool Evaluate(int count, int matches, AggregationMode aggregation) {
             switch (aggregation) {

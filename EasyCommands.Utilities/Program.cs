@@ -1,22 +1,25 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static IngameScript.Program;
 using System.Reflection;
 using EasyCommands.Utilities.Pika.Utils;
+using static IngameScript.Program;
+using static EasyCommands.Utilities.ObjectDumper.ObjectDumper;
 
 namespace EasyCommands.Utilities {
     class Program {
         static void Main(string[] args) {
             Console.OutputEncoding = Encoding.UTF8;
 
-            TestExpressionGrammar();
+            //TestExpressionGrammar();
             //TestMetaGrammar();
             //TestSomething('\t', '\n', '\r',' ');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
+            PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
         }
 
         static void ExecuteSomething() {
@@ -29,15 +32,9 @@ namespace EasyCommands.Utilities {
         }
 
         static void TestExpressionGrammar() {
-            string rawGrammar = @"Program <- Statement+;
-Statement <- var:[a-z]+ '=' E ';';
-E[4] <- '(' E ')';
-E[3] <- num:[0-9]+ / sym:[a-z]+;
-E[2] <- arith:(op:'-' E);
-E[1,L] <- arith:(E op:('*' / '/') E);
-E[0,L] <- arith:(E op:('+' / '-') E);".Replace("\r", null);
+            string rawGrammar = File.ReadAllText("expression.grammar", Encoding.UTF8);
 
-            string rawInput = @"discriminant=b*b-4*a*c;".Replace("\r", null);
+            string rawInput = @"discriminant=b*b-4*a*c;";
 
             string topRule = "Program";
             string[] recovery = new[] { topRule, "Statement" };
@@ -75,6 +72,17 @@ E[0,L] <- arith:(E op:('+' / '-') E);".Replace("\r", null);
             Console.WriteLine(buffer);
         }
 
+        static void PrintParser(string line) {
+            Parser.Logger = Console.WriteLine;
+            Parser.FunctionLookup = s => false;
+            Lexer.ClearAllState = () => {};
+            Lexer.GetState = () => ProgramState.STOPPED;
+
+            var c = Parser.ParseTokens<CommandToken>(Lexer.GetTokens(line));
+
+            Console.WriteLine();
+            Console.WriteLine(Dump(c));
+        }
 
         static IEnumerable<string> RulesToString(IEnumerable<IParameterProcessor> rules) => rules.Select(RuleToString);
         static string RuleToString(IParameterProcessor processor) =>
@@ -86,11 +94,11 @@ E[0,L] <- arith:(E op:('+' / '-') E);".Replace("\r", null);
             var payload = processor.processors;
 
             var either = payload.OfType<dynamic>().Where(p => p.left && p.right).Cast<object>();
-            var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"*{GetParameter(p)}" : GetParameter(p)).Reverse();
+            var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"*{GetParameter(p)}" : GetParameter(p));
             var right = payload.OfType<dynamic>().Where(p => p.right).Select<dynamic, string>(p => either.Contains((object)p) ? $"*{GetParameter(p)}" : GetParameter(p));
 
             var pattern = new[] { "Pattern:" }
-                .Concat(left)
+                .Concat(left.Reverse())
                 .Concat(new[] { $"^{typeof(T).GetGenericName()}" })
                 .Concat(right);
 

@@ -27,6 +27,9 @@ namespace IngameScript {
             static readonly string[] secondPassSeperators = new[] { "<", ">", "=", "&", "|", "-", "+", "?", ":" };
             static readonly string[] thirdPassSeperators = new[] { "." };
 
+            public static Action ClearAllState;
+            public static Func<ProgramState> GetState;
+
             static Lexer() {
                 PropertyWords = new Dictionary<string, List<IToken>>();
                 //Ignored words that have no command parameters
@@ -171,12 +174,12 @@ namespace IngameScript {
                 AddWords(Words("any"), new AggregationModeToken(AggregationMode.ANY));
                 AddWords(Words("all"), new AggregationModeToken(AggregationMode.ALL));
                 AddWords(Words("none"), new AggregationModeToken(AggregationMode.NONE));
-                AddWords(Words("average", "avg"), new PropertyAggregationToken((blocks, primitiveSupplier) => PROGRAM.SumAggregator(blocks, primitiveSupplier).Divide(Primitive.From(Math.Max(1, blocks.Count())))));
+                AddWords(Words("average", "avg"), new PropertyAggregationToken((blocks, primitiveSupplier) => SumAggregator(blocks, primitiveSupplier).Divide(Primitive.From(Math.Max(1, blocks.Count())))));
                 AddWords(Words("minimum", "min"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Min() ?? Primitive.From(0)));
                 AddWords(Words("maximum", "max"), new PropertyAggregationToken((blocks, primitiveSupplier) => blocks.Select(primitiveSupplier).Max() ?? Primitive.From(0)));
                 AddWords(Words("count"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(blocks.Count())));
                 AddAmbiguousWords(Words("number"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(blocks.Count())));
-                AddWords(Words("sum", "total"), new PropertyAggregationToken(PROGRAM.SumAggregator));
+                AddWords(Words("sum", "total"), new PropertyAggregationToken(SumAggregator));
                 AddWords(Words("collection"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
                 AddAmbiguousWords(Words("list"), new PropertyAggregationToken((blocks, primitiveSupplier) => Primitive.From(NewKeyedList(blocks.Select(b => new StaticVariable(primitiveSupplier(b)))))));
 
@@ -238,7 +241,7 @@ namespace IngameScript {
 
                 //Control Types
                 AddControlWords(Words("restart", "reset", "reboot"), thread => {
-                    PROGRAM.ClearAllState();
+                    ClearAllState();
                     throw new InterruptException(ProgramState.RUNNING);
                 });
                 AddControlWords(Words("repeat", "loop", "rerun", "replay"), thread => {
@@ -246,11 +249,11 @@ namespace IngameScript {
                     return false;
                 });
                 AddControlWords(Words("exit"), thread => {
-                    PROGRAM.ClearAllState();
+                    ClearAllState();
                     throw new InterruptException(ProgramState.STOPPED);
                 });
                 AddControlWords(Words("pause"), thread => {
-                    if (PROGRAM.state != ProgramState.PAUSED) throw new InterruptException(ProgramState.PAUSED);
+                    if (GetState() != ProgramState.PAUSED) throw new InterruptException(ProgramState.PAUSED);
                     return true;
                 });
                 AddControlWords(Words("break"), thread => {

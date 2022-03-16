@@ -269,7 +269,7 @@ namespace EasyCommands.Utilities.Pika.Grammar {
             // TreeUtils.PrintTreeView(topMatch, input);
 
             var topNode = new AST.Node(topLabel, topMatch, input);
-            Console.WriteLine(topNode);
+            //Console.WriteLine(topNode);
 
             if (topNode.Any(n => !n.label.Equals(RULE_AST)))
                 throw new InvalidOperationException("Wrong node type");

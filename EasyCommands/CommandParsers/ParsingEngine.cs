@@ -153,7 +153,7 @@ namespace IngameScript {
             ParseCommand(Lexer.GetTokens(commandLine), lineNumber);
 
         Command ParseCommand(List<IToken> parameters, int lineNumber) {
-            CommandToken command = Parser.ParseParameters<CommandToken>(parameters);
+            CommandToken command = Parser.ParseTokens<CommandToken>(parameters);
 
             if (command == null) throw new Exception("Unable to parse command from command parameters at line number: " + lineNumber);
             return command.value;

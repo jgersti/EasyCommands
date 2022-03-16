@@ -90,7 +90,7 @@ namespace IngameScript {
 
             IVariable ParseVariable(List<IToken> p, int startIndex, int endIndex) {
                 var range = p.GetRange(startIndex + 1, endIndex - (startIndex + 1));
-                var variable = Parser.ParseParameters<ValueToken<IVariable>>(range);
+                var variable = Parser.ParseTokens<ValueToken<IVariable>>(range);
                 if (variable == null) throw new Exception("List Index Values Must Resolve To a Variable");
                 return variable.value;
             }

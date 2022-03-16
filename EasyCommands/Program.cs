@@ -112,6 +112,9 @@ namespace IngameScript {
             PROGRAM = this;
             InitializeItems();
             Runtime.UpdateFrequency = updateFrequency;
+            Parser.FunctionLookup = functions.ContainsKey;
+            Lexer.ClearAllState = ClearAllState;
+            Lexer.GetState = () => state;
         }
 
         static void Print(String str) { PROGRAM.Echo(str); }

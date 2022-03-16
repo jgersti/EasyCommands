@@ -1,0 +1,410 @@
+﻿Parenthesis <- 'OpenParenthesis { _subparser_ } CloseParenthesis
+
+List <- 'OpenBracket (_value_ ListSeperator)* _value_? CloseBracket
+_value_ <- Variable / List / ListIndex / IndexSelector / Condition / Repetition
+
+Selector <- 'VariableSelctor AmbiguousString BlockType? Group?
+          / 'VariableSelctor Variable BlockType? Group?
+
+{
+  Ambigous <- &(...) 'AmbiguousString
+
+  Selector <- &(...) 'AmbiguousString BlockType? GroupType?
+
+  FunctionDefinition <- &(...) 'AmbiguousString
+
+  Variable <- 'AmbiguousString
+}
+
+... <- 'Ambiguous
+
+ListIndex <- 'ListIndex List
+           / Variable 'List
+
+Selector <- 'Self BlockType? Group?
+          / 'Variable BlockType? Group?
+          / 'ListIndex BlockType Group?
+          / BlockType Group?
+
+IndexSelector <- 'Index Variable
+
+Comparison <- 'Comparison Not
+            / Not 'Comparison
+            / 'Comparison Comparison
+
+Selector <- Selector 'IndexSelector
+          / Selector 'List
+
+// MultiList (last List is ')
+ListIndex <- List+
+
+<- 'Ignore
+
+FunctionDefinition <- Function 'Variable
+
+PropertySupplier <- 'Property
+                  / Variable 'ValueProperty
+                  / 'ValueProperty Variable
+
+VariableAssignment <- 'Assignment Global? &(...) Variable
+
+VariableIncrement <- 'Increase &(...) Variable
+                   / &(...) Variable 'Increment
+
+Variable <- 'Boolean
+
+Variable <- PropertyAggregate 'ListIndex
+          / Aggregate? 'ListIndex Comparison Variable
+
+Variable <- 'ListIndex
+
+{
+  UnaryOperator <- 'MinusToken
+
+  BinaryOperator,3 <- 'MinusToken
+}
+
+{
+  BinaryOperator,1 <- 'Round
+
+  LeftUnaryOperator <- 'Round
+
+  UnaryOperator <- 'Round
+}
+
+{
+  BinaryOperator,4 <- 'Cast
+
+  LeftUnaryOperator <- 'Cast
+
+  UnaryOperator <- 'Cast
+}
+
+Variable <- Variable 'LeftUnaryOperator
+          / 'UnaryOperator Variable
+
+Variable <- &(...) Variable 'ColonSeperator Variable ColonSeperator Variable
+
+Variable <- Variable 'BinaryOperator,0 Variable
+          / Variable 'BinaryOperator,1 Variable
+          / Variable 'BinaryOperator,2 Variable
+          / Variable 'BinaryOperator,3 Variable
+          / Variable 'Comparison' Variable
+          / 'Not Variable
+          / 'Reverse Variable
+          / Variable 'And Variable
+          / Variable 'Or Variable
+          / Variable 'BinaryOperator,4 Variable
+
+Variable <- Variable 'KeyedVariable Variable
+
+BlockCondition <- BlockCondition 'And That? BlockCondition
+                / BlockCondition 'Or That? BlockCondition
+
+That BlockCondition <- 'That Comparison PropertySupplier Direction? Variable?
+                     / 'That Comparison Direction? Variable
+
+Selector <- Selector 'That BlockCondition
+
+Variable <- 'PropertyAggregate Selector PropertySupplier? Direction?
+          / Direction? 'PropertyAggregate Selector PropertySupplier?
+          / PropertySupplier? 'PropertyAggregate Selector Direction?
+          / Direction? PropertySupplier? 'PropertyAggregate Selector
+          / Selector 'PropertyAggregate PropertySupplier? Direction?
+          / Direction? Selector 'PropertyAggregate PropertySupplier?
+          / PropertySupplier? Selector 'PropertyAggregate Direction?
+          / Direction? PropertySupplier? Selector 'PropertyAggregate
+
+BlockCondition <- 'Comparison PropertySupplier Direction? Variable?
+                / 'Comparison Direction? Variable
+                / Variable? 'Comparison PropertySupplier Direction?
+                / Variable 'Comparison Direction?
+                / Direction? 'Comparison PropertySupplier Variable?
+                / Direction? 'Comparison Variable
+                / PropertySupplier 'Comparison Direction? Variable?
+                / Variable? PropertySupplier 'Comparison Direction?
+                / Direction? PropertySupplier 'Comparison Variable?
+                /  Variable? Direction? PropertySupplier 'Comparison
+                / Variable Direction? 'Comparison
+
+Variable <- Selector AggregationMode? 'BlockCondition
+
+Selector <- !(...) 'AggregationMode Selector
+
+Repetition <- Variable 'Repeat
+
+Command <- Selector 'Transfer Selector Variable Variable?
+         / 'Transfer Selector Selector Variable variable?
+
+TernaryConditionSeperator <- ColonSeperator
+
+Variable <- Variable 'TernaryConditionIndicator Variable TernaryConditionSeperator Variable
+
+Condition <- 'If Variable
+
+{
+  Command <- Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Direction? Not? Relative?
+           / Direction? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Direction? Reverse? Not? Relative?
+           / Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Direction? Relative?
+           / Not? Direction? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Direction? Not? Relative?
+           / PropertySupplier? Direction? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Reverse? Not? Relative?
+           / Not? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Direction? Not? Relative?
+           / Direction? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Variable? Increase? Assignment* 'Selector Assignment+ Increment? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Direction? Increase? Assignment* 'Selector Assignment+ Increment? Variable? PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Direction? Relative?
+           / Not? Direction? PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? Increase? Assignment* 'Selector Assignment+ Increment? Variable? Not? Relative?
+           / Not? Reverse? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Direction? Relative?
+           / Not? Direction? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Variable? Increase? Assignment* 'Selector Assignment+ Increment? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Variable? Increase? Assignment* 'Selector Assignment+ Increment? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Variable? Increase? Assignment* 'Selector Assignment+ Increment? Direction? Not? Relative?
+           / Direction? PropertySupplier? Variable? Increase? Assignment* 'Selector Assignment+ Increment? Reverse? Not? Relative?
+           / Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Direction? Not? Relative?
+           / Direction? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Direction? Reverse? Not? Relative?
+           / Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Direction? Relative?
+           / Not? Direction? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Direction? Not? Relative?
+           / PropertySupplier? Direction? Increase? Assignment+ 'Selector Increment? Variable? Reverse? Not? Relative?
+           / Not? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Direction? Not? Relative?
+           / Direction? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Variable? Increase? Assignment+ 'Selector Increment? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Direction? Increase? Assignment+ 'Selector Increment? Variable? PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Direction? Relative?
+           / Not? Direction? PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? Increase? Assignment+ 'Selector Increment? Variable? Not? Relative?
+           / Not? Reverse? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Direction? Relative?
+           / Not? Direction? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Variable? Increase? Assignment+ 'Selector Increment? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Variable? Increase? Assignment+ 'Selector Increment? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Variable? Increase? Assignment+ 'Selector Increment? Direction? Not? Relative?
+           / Direction? PropertySupplier? Variable? Increase? Assignment+ 'Selector Increment? Reverse? Not? Relative?
+           / Increase 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Increase 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Increase 'Selector Increment? Variable? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Increase 'Selector Increment? Variable? PropertySupplier? Direction? Not? Relative?
+           / Direction? Increase 'Selector Increment? Variable? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Increase 'Selector Increment? Variable? Direction? Reverse? Not? Relative?
+           / Variable? Increase 'Selector Increment? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Increase 'Selector Increment? Variable? PropertySupplier? Direction? Relative?
+           / Not? Direction? Increase 'Selector Increment? Variable? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Increase 'Selector Increment? Variable? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Increase 'Selector Increment? Variable? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Increase 'Selector Increment? Variable? Direction? Not? Relative?
+           / PropertySupplier? Direction? Increase 'Selector Increment? Variable? Reverse? Not? Relative?
+           / Not? Variable? Increase 'Selector Increment? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Variable? Increase 'Selector Increment? PropertySupplier? Direction? Not? Relative?
+           / Direction? Variable? Increase 'Selector Increment? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Variable? Increase 'Selector Increment? Direction? Reverse? Not? Relative?
+           / Not? Reverse? Direction? Increase 'Selector Increment? Variable? PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? Increase 'Selector Increment? Variable? Direction? Relative?
+           / Not? Direction? PropertySupplier? Increase 'Selector Increment? Variable? Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? Increase 'Selector Increment? Variable? Not? Relative?
+           / Not? Reverse? Variable? Increase 'Selector Increment? PropertySupplier? Direction? Relative?
+           / Not? Direction? Variable? Increase 'Selector Increment? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Variable? Increase 'Selector Increment? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Variable? Increase 'Selector Increment? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Variable? Increase 'Selector Increment? Direction? Not? Relative?
+           / Direction? PropertySupplier? Variable? Increase 'Selector Increment? Reverse? Not? Relative?
+           / 'Selector Increment Variable? PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? 'Selector Increment Variable? PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? 'Selector Increment Variable? PropertySupplier? Direction? Not? Relative?
+           / Direction? 'Selector Increment Variable? PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? 'Selector Increment Variable? Direction? Reverse? Not? Relative?
+           / Variable? 'Selector Increment PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Reverse? 'Selector Increment Variable? PropertySupplier? Direction? Relative?
+           / Not? Direction? 'Selector Increment Variable? PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? 'Selector Increment Variable? PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? 'Selector Increment Variable? Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? 'Selector Increment Variable? Direction? Not? Relative?
+           / PropertySupplier? Direction? 'Selector Increment Variable? Reverse? Not? Relative?
+           / Not? Variable? 'Selector Increment PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Variable? 'Selector Increment PropertySupplier? Direction? Not? Relative?
+           / Direction? Variable? 'Selector Increment PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Variable? 'Selector Increment Direction? Reverse? Not? Relative?
+           / Not? Reverse? Direction? 'Selector Increment Variable? PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? 'Selector Increment Variable? Direction? Relative?
+           / Not? Direction? PropertySupplier? 'Selector Increment Variable? Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? 'Selector Increment Variable? Not? Relative?
+           / Not? Reverse? Variable? 'Selector Increment PropertySupplier? Direction? Relative?
+           / Not? Direction? Variable? 'Selector Increment PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Variable? 'Selector Increment PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Variable? 'Selector Increment Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Variable? 'Selector Increment Direction? Not? Relative?
+           / Direction? PropertySupplier? Variable? 'Selector Increment Reverse? Not? Relative?
+           / 'Selector Variable PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? 'Selector Variable PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? 'Selector Variable PropertySupplier? Direction? Not? Relative?
+           / Direction? 'Selector Variable PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? 'Selector Variable Direction? Reverse? Not? Relative?
+           / Variable 'Selector PropertySupplier? Direction? Reverse? Not? Relative?
+           / Not? Reverse? 'Selector Variable PropertySupplier? Direction? Relative?
+           / Not? Direction? 'Selector Variable PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? 'Selector Variable PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? 'Selector Variable Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? 'Selector Variable Direction? Not? Relative?
+           / PropertySupplier? Direction? 'Selector Variable Reverse? Not? Relative?
+           / Not? Variable 'Selector PropertySupplier? Direction? Reverse? Relative?
+           / Reverse? Variable 'Selector PropertySupplier? Direction? Not? Relative?
+           / Direction? Variable 'Selector PropertySupplier? Reverse? Not? Relative?
+           / PropertySupplier? Variable 'Selector Direction? Reverse? Not? Relative?
+           / Not? Reverse? Direction? 'Selector Variable PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? 'Selector Variable Direction? Relative?
+           / Not? Direction? PropertySupplier? 'Selector Variable Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? 'Selector Variable Not? Relative?
+           / Not? Reverse? Variable 'Selector PropertySupplier? Direction? Relative?
+           / Not? Direction? Variable 'Selector PropertySupplier? Reverse? Relative?
+           / Reverse? Direction? Variable 'Selector PropertySupplier? Not? Relative?
+           / Not? PropertySupplier? Variable 'Selector Direction? Reverse? Relative?
+           / Reverse? PropertySupplier? Variable 'Selector Direction? Not? Relative?
+           / Direction? PropertySupplier? Variable 'Selector Reverse? Not? Relative?
+           / Not? Reverse? Direction? PropertySupplier? 'Selector Variable Relative?
+           / Not? Reverse? Direction? Variable 'Selector PropertySupplier? Relative?
+           / Not? Reverse? PropertySupplier? Variable 'Selector Direction? Relative?
+           / Not? Direction? PropertySupplier? Variable 'Selector Reverse? Relative?
+           / Reverse? Direction? PropertySupplier? Variable 'Selector Not? Relative?
+           / Not? Reverse? Direction? PropertySupplier? Variable 'Selector Relative?
+           / 'Selector PropertySupplier? Direction? Reverse Not? Relative?
+           / Not? 'Selector PropertySupplier? Direction? Reverse Relative?
+           / Reverse 'Selector PropertySupplier? Direction? Not? Relative?
+           / Direction? 'Selector PropertySupplier? Reverse Not? Relative?
+           / PropertySupplier?'Selector  Direction? Reverse Not? Relative?
+           / Not? Reverse 'Selector PropertySupplier? Direction? Relative?
+           / Not? Direction? 'Selector PropertySupplier? Reverse Relative?
+           / Not? PropertySupplier? 'Selector Direction? Reverse Relative?
+           / Reverse Direction? 'Selector PropertySupplier? Not? Relative?
+           / Reverse PropertySupplier? 'Selector Direction? Not? Relative?
+           / Direction? PropertySupplier? 'Selector Reverse Not? Relative?
+           / Not? Reverse Direction? 'Selector PropertySupplier? Relative?
+           / Not? Reverse PropertySupplier? 'Selector Direction? Relative?
+           / Not? Direction? PropertySupplier? 'Selector Reverse Relative?
+           / Reverse Direction? PropertySupplier? 'Selector Not? Relative?
+           / Not? Reverse Direction? PropertySupplier? 'Selector Relative?
+           / 'Selector PropertySupplier? Direction? Not Relative?
+           / Not 'Selector PropertySupplier? Direction? Relative?
+           / Direction? 'Selector PropertySupplier? Not Relative?
+           / PropertySupplier? 'Selector Direction? Not Relative?
+           / Not Direction? 'Selector PropertySupplier? Relative?
+           / Not PropertySupplier? 'Selector Direction? Relative?
+           / Direction? PropertySupplier? 'Selector Not Relative?
+           / Not Direction? PropertySupplier? 'Selector Relative?
+           / 'Selector PropertySupplier? Direction? Relative
+           / Direction? 'Selector PropertySupplier? Relative
+           / PropertySupplier? 'Selector Direction? Relative
+           / Direction? PropertySupplier? 'Selector Relative
+
+  Variable <- 'Selector PropertySupplier Direction?
+            / Direction? 'Selector PropertySupplier
+            / PropertySupplier 'Selector Direction?
+            / Direction? PropertySupplier 'Selector
+
+  Command <- 'Selector PropertySupplier Direction?
+           / 'Selector Direction
+           / Direction? 'Selector PropertySupplier
+           / Direction 'Selector
+           / PropertySupplier 'Selector Direction?
+           / Direction? PropertySupplier 'Selector
+}
+
+<- 'Relative
+
+Command <- 'Assignment &(...) Variable Variable
+         / 'Print Variable
+         / 'Wait Variable?
+         / 'FunctionDefinition Variable*
+         / 'VariableAssignment Variable
+         / 'VariableIncrement Variable?
+
+VariableIncrement <- 'Increment &(...) Variable
+
+Command <- 'Send Variable Variable
+         / 'Listen Variable
+         / 'Repetition Command
+         / Command 'Repetition
+         / 'Queue Command
+         / 'Iterator &(...) Variable Variable Command
+         / Command 'Iterator &(...) Variable Variable
+
+Command <- 'Condtion Command Else? Command?
+         / Command 'Condition Else? Command?
+
+---
+
+// lexer output tokens
+Ignore
+Group
+Self
+VariableSelctor
+Direction
+Assignment
+Reverse
+Assignment Direction
+Increase
+Increment
+Global
+Relative
+Boolean
+Property
+AmbiguousString (Ambiguous)
+ValueProperty
+Repeat
+Wait
+Function
+Listen
+Send
+Print
+Queue
+Transfer
+KeyedVariable
+TernaryConditionIndicator
+TernaryConditionSeperator
+ColonSeperator
+Iterator
+If
+Else
+That
+Comparison
+AggregationMode
+PropertyAggregate
+OpenParenthesis
+CloseParenthesis
+And
+Or
+Not
+Index
+UnaryOperator
+LeftUnaryOperator
+BinaryOperator,0
+BinaryOperator,1
+BinaryOperator,2
+BinaryOperator,3
+BinaryOperator,4
+Minus
+Round
+Cast
+OpenBracket
+CloseBracket
+ListSeperator
+Command
+BlockType
+
+// termination
+_start <- Command !.

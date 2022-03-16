@@ -24,7 +24,15 @@ namespace IngameScript {
         }
         public abstract class SimpleToken : IToken {
             public string Lexeme { get; set; }
+            public override string ToString() => $"[{this.GetType().Name.Replace("Token", null)}]";
         }
+
+        public abstract class ValueToken<T> : SimpleToken {
+            public T value;
+            public ValueToken(T v) { value = v; }
+            //public override string ToString() => $"[{this.GetType().Name.Replace("Token", null)}:{typeof(T).Name}, l='{Lexeme ?? ""}']";
+        }
+
         public class IndexToken : SimpleToken { }
         public class GroupToken : SimpleToken { }
         public class VariableSelectorToken : SimpleToken { }
@@ -55,11 +63,6 @@ namespace IngameScript {
         public class RoundToken : SimpleToken { }
         public class CastToken : SimpleToken { }
         public class RelativeToken : SimpleToken { }
-
-        public abstract class ValueToken<T> : SimpleToken {
-            public T value;
-            public ValueToken(T v) { value = v; }
-        }
 
         public class ListenToken : ValueToken<bool> {
             public ListenToken(bool v) : base(v) { }
