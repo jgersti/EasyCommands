@@ -19,7 +19,9 @@ namespace EasyCommands.Utilities {
             //TestSomething('\t', '\n', '\r',' ');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
-            PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
+            //PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
+
+            TestPrototypeGrammar("[Assignment][VariableSelector][AmbiguousString][BlockType][Group][OpenBracket][AmbiguousString][ListSeparator][AmbiguousString][CloseBracket][Property][Ignore][AmbiguousString][Comparison][AmbiguousString][TernaryConditionIndicator][AmbiguousString][TernaryConditionSeparator][AmbiguousString];");
         }
 
         static void ExecuteSomething() {
@@ -32,7 +34,7 @@ namespace EasyCommands.Utilities {
         }
 
         static void TestExpressionGrammar() {
-            string rawGrammar = File.ReadAllText("expression.grammar", Encoding.UTF8);
+            string rawGrammar = File.ReadAllText("Resources\\expression.grammar", Encoding.UTF8);
 
             string rawInput = @"discriminant=b*b-4*a*c;";
 
@@ -82,6 +84,18 @@ namespace EasyCommands.Utilities {
 
             Console.WriteLine();
             Console.WriteLine(Dump(c));
+        }
+
+        static void TestPrototypeGrammar(string input) {
+            string rawGrammar = File.ReadAllText("Resources\\prototype.grammar", Encoding.UTF8);
+
+            string topRule = "Line";
+            string[] recovery = new[] { topRule };
+
+            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
+            var table = grammar.Parse(input);
+
+            ParserInfo.PrintParseResult(topRule, table, recovery, false);
         }
 
         static IEnumerable<string> RulesToString(IEnumerable<IParameterProcessor> rules) => rules.Select(RuleToString);

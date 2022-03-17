@@ -1,1 +1,31 @@
-﻿
+﻿Line  <- Command ';';
+
+# input tokens
+Assignment <- "[Assignment]";
+VariableSelector <- "[VariableSelector]";
+AmbiguousString <- "[AmbiguousString]";
+BlockType <- "[BlockType]";
+Group <- "[Group]";
+OpenBracket <- "[OpenBracket]";
+CloseBracket <- "[CloseBracket]";
+Property <- "[Property]";
+Ignore <- "[Ignore]";
+Comparison <- "[Comparison]";
+TernaryConditionIndicator <- "[TernaryConditionIndicator]";
+TernaryConditionSeparator <- "[TernaryConditionSeparator]";
+ListSeparator <- "[ListSeparator]";
+
+# actual rules
+List <- OpenBracket ((Variable / List) ListSeparator)* (Variable / List)? CloseBracket;
+
+Selector[1] <- VariableSelector AmbiguousString BlockType? Group?
+             / VariableSelector Variable BlockType? Group?;
+Selector[0] <- Selector List;
+
+Variable[2] <- AmbiguousString;
+Variable[1] <- Variable Comparison Variable;
+Variable[0] <- Variable TernaryConditionIndicator Variable TernaryConditionSeparator Variable;
+
+PropertySupplier <- Property;
+
+Command <- Assignment Selector PropertySupplier Ignore? Variable;

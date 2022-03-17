@@ -78,7 +78,7 @@ namespace EasyCommands.Utilities.Pika.Utils {
                     if (cEnd0 < c0)
                         throw new ArgumentException($"Char range limits out of order: {c0}, {cEnd0}");
 
-                    Enumerable.Range(c0, cEnd0 - c0 + 1).ForEach(j => chars.Set(j, true));
+                    Enumerable.Range(c0, cEnd0 - c0).ForEach(j => chars.Set(j, true));
                     i += 2;
                 } else
                     chars.Set(c0, true);

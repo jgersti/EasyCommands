@@ -111,10 +111,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\grammar.txt" />
-    <None Include="Resources\prototype.grammar" />
-    <Resource Include="Resources\expression.grammar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
+    <AdditionalFiles Include="Resources\prototype.grammar">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </AdditionalFiles>
+    <AdditionalFiles Include="Resources\expression.grammar">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </AdditionalFiles>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
