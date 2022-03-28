@@ -114,6 +114,16 @@ namespace IngameScript {
             }
         }
 
+        public class ListIndexAssignmentToken : SimpleToken {
+            public ListIndexVariable listIndex;
+            public bool useReference;
+
+            public ListIndexAssignmentToken(ListIndexVariable variable, bool reference) {
+                listIndex = variable;
+                useReference = reference;
+            }
+        }
+
         public class VariableIncrementToken : ValueToken<bool> {
             public string variableName;
             public VariableIncrementToken(string variable, bool increase = true) : base(increase) {
@@ -236,6 +246,11 @@ namespace IngameScript {
 
         public class SelectorToken : ValueToken<ISelector> {
             public SelectorToken(ISelector value) : base(value) {
+            }
+        }
+
+        public class AmbiguousSelectorToken : SelectorToken {
+            public AmbiguousSelectorToken(BlockSelector value) : base(value) {
             }
         }
 

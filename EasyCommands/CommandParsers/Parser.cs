@@ -34,19 +34,20 @@ namespace IngameScript {
                     (p, selector, blockType, group) => new SelectorToken(new BlockSelector(blockType?.value, group != null, selector.value))),
 
                 //SelectorProcessor
+                TwoValueRule(Type<AmbiguousStringToken>, requiredRight<BlockTypeToken>(), optionalRight<GroupToken>(),
+                    (p, b, g) => new SelectorToken(new BlockSelector(b.value, g != null, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
+
+            //AmbiguousStringProcessor
                 new BranchingProcessor<AmbiguousStringToken>(
                     NoValueRule(Type<AmbiguousStringToken>,
                         p => p.subTokens.Count > 0 && p.subTokens[0] is AmbiguousToken,
                         p => p.subTokens),
-                    TwoValueRule(Type<AmbiguousStringToken>, optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                            (p, blockType, group) => {
-                                if (blockType.GetValue() == null) {
-                                    blockType.SetValue(findLast<BlockTypeToken>(p.subTokens));
-                                    group.SetValue(findLast<GroupToken>(p.subTokens));
-                                }
-                                return blockType.GetValue() != null;
-                            },
-                            (p, blockType, group) => new SelectorToken(new BlockSelector(blockType.value, group != null, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
+                   OneValueRule(Type<AmbiguousStringToken>, optionalRight<GroupToken>(),
+                        (p, g) => findLast<BlockTypeToken>(p.subTokens) != null,
+                        (p, g) => new AmbiguousSelectorToken(
+                                    new BlockSelector(findLast<BlockTypeToken>(p.subTokens).value,
+                                        (g ?? findLast<GroupToken>(p.subTokens)) != null,
+                                        p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
                     NoValueRule(Type<AmbiguousStringToken>,
                         name => FunctionLookup(name.value),
                         name => new FunctionDefinitionToken(() => name.value)),
@@ -65,6 +66,9 @@ namespace IngameScript {
 
                 OneValueRule(Type<ListToken>, requiredLeft<VariableToken>(),
                     (list, variable) => new ListIndexToken(new ListIndexVariable(variable.value, list.value))),
+
+                OneValueRule(Type<ListIndexToken>, requiredLeft<AssignmentToken>(),
+                    (index, assignment) => new ListIndexAssignmentToken(index.value, assignment.value)),
 
                 //SelfSelectorProcessor
                 TwoValueRule(Type<Selftoken>, optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
@@ -282,6 +286,11 @@ namespace IngameScript {
                 OneValueRule(Type<IfToken>, requiredRight<VariableToken>(),
                     (p, var) => new ConditionToken(p.inverseCondition ? new UnaryOperationVariable(UnaryOperator.REVERSE, var.value) : var.value, p.alwaysEvaluate, p.swapCommands)),
 
+                new BranchingProcessor<AmbiguousSelectorToken>(
+                    NoValueRule(Type<AmbiguousSelectorToken>, p => new VariableToken(((BlockSelector)p.value).selector)),
+                    NoValueRule(Type<AmbiguousSelectorToken>, p => new SelectorToken(p.value))
+                ),
+
                 //AmbiguousSelectorPropertyProcessor
                 new BranchingProcessor<SelectorToken>(
                     BlockCommandProcessor(),
@@ -300,9 +309,8 @@ namespace IngameScript {
                 NoValueRule(Type<RelativeToken>, b => NewList<IToken>()),
 
                 //ListIndexAssignmentProcessor
-                TwoValueRule(Type<AssignmentToken>, requiredRight<VariableToken>(), requiredRight<VariableToken>(),
-                    (p, list, value) => AllSatisfied(list, value) && list.GetValue().value is ListIndexVariable,
-                    (p, list, value) => new CommandToken(new ListVariableAssignmentCommand((ListIndexVariable)list.value, value.value, p.value))),
+                OneValueRule(Type<ListIndexAssignmentToken>, requiredRight<VariableToken>(),
+                (list, value) => new CommandToken(new ListVariableAssignmentCommand(list.listIndex, value.value, list.useReference))),
 
                 //PrintCommandProcessor
                 OneValueRule(Type<PrintToken>, requiredRight<VariableToken>(),
