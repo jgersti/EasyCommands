@@ -111,7 +111,7 @@ namespace IngameScript {
                 new MultiListProcessor(),
 
                 //IgnoreProcessor
-                NoValueRule(Type<IgnoreToken>, p => NewList<IToken>()),
+
 
                 //FunctionProcessor
                 OneValueRule(Type<VariableToken>, requiredLeft<FunctionToken>(),
@@ -145,6 +145,8 @@ namespace IngameScript {
                 //Primitive Processor
                 NoValueRule(Type<BooleanToken>, b => new VariableToken(GetStaticVariable(b.value))),
 
+                //NoValueRule(Type<IteratorAssignmentToken>, p => NewList<IToken>()),
+
                 //ListPropertyAggregationProcessor
                 OneValueRule(Type<ListIndexToken>, requiredLeft<PropertyAggregationToken>(),
                     (list, aggregation) => new VariableToken(new ListAggregateVariable(list.value, aggregation.value))),
@@ -161,6 +163,8 @@ namespace IngameScript {
                     NoValueRule(Type<MinusToken>, minus => new UnaryOperationToken(UnaryOperator.REVERSE)),
                     NoValueRule(Type<MinusToken>, minus => new BinaryOperandToken(BinaryOperator.SUBTRACT, 3))
                 ),
+
+                NoValueRule(Type<AbsoluteToken>, p => NewList<IToken>()),
 
                 //RoundProcessor
                 new BranchingProcessor<RoundToken>(
@@ -306,7 +310,7 @@ namespace IngameScript {
                                 b.UpdatePropertyValue(e, property.WithDirection(direction).Resolve(b))));
                         })),
 
-                NoValueRule(Type<RelativeToken>, b => NewList<IToken>()),
+                //NoValueRule(Type<RelativeToken>, b => NewList<IToken>()),
 
                 //ListIndexAssignmentProcessor
                 OneValueRule(Type<ListIndexAssignmentToken>, requiredRight<VariableToken>(),
@@ -329,8 +333,8 @@ namespace IngameScript {
                     (p, var) => new CommandToken(new VariableAssignmentCommand(p.variableName, var.value, p.useReference, p.isGlobal))),
 
                 //VariableIncrementProcessor
-                OneValueRule(Type<VariableIncrementToken>, optionalRight<VariableToken>(),
-                    (increment, variable) => new CommandToken(new VariableIncrementCommand(increment.variableName, increment.value, variable?.value ?? GetStaticVariable(1)))),
+                TwoValueRule(Type<VariableIncrementToken>, optionalRight<RelativeToken>(), optionalRight<VariableToken>(),
+                    (increment, r, variable) => new CommandToken(new VariableIncrementCommand(increment.variableName, increment.value, variable?.value ?? GetStaticVariable(1)))),
                 //Handles --i
                 OneValueRule(Type<IncrementToken>, requiredRight<VariableToken>(),
                     (p, name) => name.Satisfied() && (name.GetValue().value is AmbiguousStringVariable),
@@ -354,9 +358,9 @@ namespace IngameScript {
                     (p, command) => new CommandToken(new QueueCommand(command.value, p.value))),
 
                 //IteratorProcessor
-                ThreeValueRule(Type<IteratorToken>, requiredRight<VariableToken>(), requiredRight<VariableToken>(), requiredEither<CommandToken>(),
-                    (i, item, list, command) => AllSatisfied(list, command, item) && item.GetValue().value is AmbiguousStringVariable,
-                    (i, item, list, command) => new CommandToken(new ForEachCommand(((AmbiguousStringVariable)item.value).value, list.value, command.value))),
+                FourValueRule(Type<IteratorToken>, requiredRight<VariableToken>(), optionalRight<IteratorAssignmentToken>(), requiredRight<VariableToken>(), requiredEither<CommandToken>(),
+                    (i, item, _, list, command) => AllSatisfied(list, command, _, item) && item.GetValue().value is AmbiguousStringVariable,
+                    (i, item, _, list, command) => new CommandToken(new ForEachCommand(((AmbiguousStringVariable)item.value).value, list.value, command.value))),
 
                 //ConditionalCommandProcessor
                 //condition command

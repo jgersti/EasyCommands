@@ -63,6 +63,8 @@ namespace IngameScript {
         public class RoundToken : SimpleToken { }
         public class CastToken : SimpleToken { }
         public class RelativeToken : SimpleToken { }
+        public class AbsoluteToken : SimpleToken { }
+        public class IteratorAssignmentToken : SimpleToken { }
 
         public class ListenToken : ValueToken<bool> {
             public ListenToken(bool v) : base(v) { }

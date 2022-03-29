@@ -33,7 +33,7 @@ namespace IngameScript {
             static Lexer() {
                 PropertyWords = new Dictionary<string, List<IToken>>();
                 //Ignored words that have no command parameters
-                AddWords(Words("the", "than", "turned", "block", "panel", "chamber", "drive", "to", "from", "then", "of", "either", "for", "in", "do", "does", "second", "seconds", "be", "being", "digits", "digit"), new IgnoreToken());
+                AddWords(Words("the", "than", "turned", "block", "panel", "chamber", "drive", "from", "then", "of", "either", "for", "do", "does", "second", "seconds", "be", "being", "digits", "digit"));
 
                 //Selector Related Words
                 AddWords(Words("blocks", "group", "panels", "chambers", "drives"), new GroupToken());
@@ -62,6 +62,8 @@ namespace IngameScript {
                 AddWords(Words("--", "-="), new IncrementToken(false));
                 AddWords(Words("global"), new GlobalToken());
                 AddWords(Words("by"), new RelativeToken());
+                AddWords(Words("to"), new AbsoluteToken());
+                AddWords(Words("in"), new IteratorAssignmentToken());
 
                 //Value Words
                 AddWords(Words("on", "begin", "true", "start", "started", "resume", "resumed"), new BooleanToken(true));
@@ -382,7 +384,8 @@ namespace IngameScript {
                 else //If no property matches, must be a string
                     tokens.Add(new AmbiguousStringToken(lexeme.original, true));
 
-                tokens[0].Lexeme = lexeme.original;
+                if (tokens.Count > 0)
+                    tokens[0].Lexeme = lexeme.original;
                 return tokens;
             }
 
