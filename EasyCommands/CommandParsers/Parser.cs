@@ -398,7 +398,7 @@ namespace IngameScript {
                 var branches = NewList<List<IToken>>();
                 AddProcessors(sortedProcessors, tokens);
 
-                Logger?.Invoke($"input: {string.Join(" ", tokens)}");
+                Logger?.Invoke($"in : {string.Join(" ", tokens)} {{{string.Join(",", sortedProcessors.Select(p => p.Rank))}}}");
 
                 int processorIndex = 0;
                 while (processorIndex < sortedProcessors.Count) {
@@ -419,7 +419,7 @@ namespace IngameScript {
                     }
 
                     if (processed) {
-                        Logger?.Invoke($"{current.Rank,5:D}: {string.Join(" ", tokens)}");
+                        Logger?.Invoke($"{current.Rank,3:D}: {string.Join(" ", tokens)}  {{{string.Join(",", sortedProcessors.Select(p => p.Rank))}}}");
                         processorIndex = 0;
                         continue;
                     }
@@ -429,6 +429,9 @@ namespace IngameScript {
                     else
                         processorIndex++;
                 }
+
+                Logger?.Invoke($"out: {string.Join(" ", tokens)} {{{string.Join(",", sortedProcessors.Select(p => p.Rank))}}}");
+                Logger?.Invoke(string.Join("\n", branches.Select((b, i) => $"*{i,2:D}: {string.Join(" ", b)} ")));
 
                 return branches;
             }
