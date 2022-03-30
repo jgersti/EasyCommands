@@ -20,8 +20,9 @@ namespace EasyCommands.Utilities {
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
             //PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
-
-            TestPrototypeGrammar("[Assignment][VariableSelector][AmbiguousString][BlockType][Group][OpenBracket][AmbiguousString][ListSeparator][AmbiguousString][CloseBracket][Property][Ignore][AmbiguousString][Comparison][AmbiguousString][TernaryConditionIndicator][AmbiguousString][TernaryConditionSeparator][AmbiguousString];");
+            //PrintParser(@"assign myList[1, 2, 3] to [0]");
+            ExecuteSomething();
+            //TestPrototypeGrammar("[Assignment][VariableSelector][AmbiguousString][BlockType][Group][OpenBracket][AmbiguousString][ListSeparator][AmbiguousString][CloseBracket][Property][Ignore][AmbiguousString][Comparison][AmbiguousString][TernaryConditionIndicator][AmbiguousString][TernaryConditionSeparator][AmbiguousString];");
         }
 
         static void ExecuteSomething() {
@@ -31,6 +32,7 @@ namespace EasyCommands.Utilities {
                 foreach (var s in RulesToString(p))
                     Console.WriteLine(s);
             }
+            //Parser.parameterProcessors.Select(RuleToString).ForEach(s => Console.WriteLine(s));
         }
 
         static void TestExpressionGrammar() {
@@ -46,46 +48,11 @@ namespace EasyCommands.Utilities {
 
             ParserInfo.PrintParseResult(topRule, table, recovery, false);
         }
-
         static void TestMetaGrammar() {
             ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
             Console.WriteLine();
             ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
         }
-
-        static void TestSomething(params char[] chars) {
-            // keep the shit sorted !
-            var buffer = new StringBuilder();
-            var diff = chars.Zip(chars.Skip(1), (x, y) => y - x).ToArray();
-            buffer.Append(StringUtils.EscapeCharRangeChar(chars[0]));
-            int i = 0;
-            while (i < diff.Length) { // diff.Length == chars.Length-1
-                if (diff[i] != 1)
-                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[++i]));
-                else {
-                    var j = i;
-                    while (j < diff.Length && diff[j] == 1) j++;
-                    if (j - i > 2)
-                        buffer.Append('-');
-                    buffer.Append(StringUtils.EscapeCharRangeChar(chars[j]));
-                    i = j;
-                }
-            }
-            Console.WriteLine(buffer);
-        }
-
-        static void PrintParser(string line) {
-            Parser.Logger = Console.WriteLine;
-            Parser.FunctionLookup = s => false;
-            Lexer.ClearAllState = () => {};
-            Lexer.GetState = () => ProgramState.STOPPED;
-
-            var c = Parser.ParseTokens<CommandToken>(Lexer.GetTokens(line));
-
-            Console.WriteLine();
-            Console.WriteLine(Dump(c));
-        }
-
         static void TestPrototypeGrammar(string input) {
             string rawGrammar = File.ReadAllText("Resources\\prototype.grammar", Encoding.UTF8);
 
@@ -98,6 +65,20 @@ namespace EasyCommands.Utilities {
             ParserInfo.PrintParseResult(topRule, table, recovery, false);
         }
 
+        static void PrintParser(string line) {
+            Parser.Logger = Console.WriteLine;
+            Parser.FunctionLookup = s => false;
+
+            Lexer.ClearAllState = () => { };
+            Lexer.GetState = () => ProgramState.STOPPED;
+
+            Console.WriteLine(line);
+            Console.WriteLine();
+            var c = Parser.ParseTokens<CommandToken>(Lexer.GetTokens(line));
+
+            //Console.WriteLine(Dump(c));
+        }
+
         static IEnumerable<string> RulesToString(IEnumerable<IParameterProcessor> rules) => rules.Select(RuleToString);
         static string RuleToString(IParameterProcessor processor) =>
             $"{processor.Rank}. {processor.GetType().GetGenericName().Replace("Processor", null)}\n\t{string.Join("\n\t", GetPattern((dynamic)processor))}\n";
@@ -108,8 +89,8 @@ namespace EasyCommands.Utilities {
             var payload = processor.processors;
 
             var either = payload.OfType<dynamic>().Where(p => p.left && p.right).Cast<object>();
-            var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"*{GetParameter(p)}" : GetParameter(p));
-            var right = payload.OfType<dynamic>().Where(p => p.right).Select<dynamic, string>(p => either.Contains((object)p) ? $"*{GetParameter(p)}" : GetParameter(p));
+            var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"~{GetParameter(p)}" : GetParameter(p));
+            var right = payload.OfType<dynamic>().Where(p => p.right).Select<dynamic, string>(p => either.Contains((object)p) ? $"~{GetParameter(p)}" : GetParameter(p));
 
             var pattern = new[] { "Pattern:" }
                 .Concat(left.Reverse())
@@ -120,8 +101,8 @@ namespace EasyCommands.Utilities {
         }
 
         static string GetParameter<T>(DataProcessor<T> processor) => $"{typeof(T).GetGenericName()}";
-        static string GetParameter<T>(OptionalDataProcessor<T> processor) => $"[{typeof(T).GetGenericName()}]";
-        static string GetParameter<T>(ListDataProcessor<T> processor) => processor.required ? $"{{{typeof(T).GetGenericName()}}}" : $"[{{{typeof(T).GetGenericName()}}}]";
+        static string GetParameter<T>(OptionalDataProcessor<T> processor) => $"{typeof(T).GetGenericName()}?";
+        static string GetParameter<T>(ListDataProcessor<T> processor) => processor.required ? $"{typeof(T).GetGenericName()}+" : $"{typeof(T).GetGenericName()}*";
     }
 
     public static class MyExtensionMethods {
