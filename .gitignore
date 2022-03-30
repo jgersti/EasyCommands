@@ -346,3 +346,4 @@ healthchecksdb
 
 # lib/nuget
 lib/
+/EasyCommands.Utilities/*.txt
