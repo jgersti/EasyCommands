@@ -100,9 +100,9 @@ namespace EasyCommands.Utilities {
             return new[] { string.Join(" ", pattern) };
         }
 
-        static string GetParameter<T>(DataProcessor<T> processor) => $"{typeof(T).GetGenericName()}";
-        static string GetParameter<T>(OptionalDataProcessor<T> processor) => $"{typeof(T).GetGenericName()}?";
-        static string GetParameter<T>(ListDataProcessor<T> processor) => processor.required ? $"{typeof(T).GetGenericName()}+" : $"{typeof(T).GetGenericName()}*";
+        static string GetParameter<T>(Match<T> processor) => $"{typeof(T).GetGenericName()}";
+        static string GetParameter<T>(OptionalMatch<T> processor) => $"{typeof(T).GetGenericName()}?";
+        static string GetParameter<T>(ListMatch<T> processor) => processor.required ? $"{typeof(T).GetGenericName()}+" : $"{typeof(T).GetGenericName()}*";
     }
 
     public static class MyExtensionMethods {

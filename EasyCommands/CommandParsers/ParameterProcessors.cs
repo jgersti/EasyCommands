@@ -148,7 +148,7 @@ namespace IngameScript {
             var reverseProcessor = requiredEither<ReverseToken>();
             var notProcessor = requiredEither<NotToken>();
             var relativeProcessor = requiredRight<RelativeToken>();
-            var processors = NewList<IDataProcessor>(
+            var processors = NewList<IMatch>(
                 assignmentProcessor,
                 increaseProcessor,
                 incrementProcessor,
@@ -207,11 +207,11 @@ namespace IngameScript {
 
         //Rule Processors
         public class RuleProcessor<T> : ParameterProcessor<T> where T : class, IToken {
-            public List<IDataProcessor> processors;
+            public List<IMatch> processors;
             public CanConvert<T> canConvert;
             public Convert<T> convert;
 
-            public RuleProcessor(List<IDataProcessor> proc, CanConvert<T> canConv, Convert<T> conv) {
+            public RuleProcessor(List<IMatch> proc, CanConvert<T> canConv, Convert<T> conv) {
                 processors = proc;
                 canConvert = canConv;
                 convert = conv;
@@ -252,38 +252,38 @@ namespace IngameScript {
         static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Convert<T> convert) where T : class, IToken => NoValueRule(type, p => true, convert);
 
         static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, CanConvert<T> canConvert, Convert<T> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IDataProcessor>(), canConvert, convert);
+            new RuleProcessor<T>(NewList<IMatch>(), canConvert, convert);
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueConvert<T, U> convert) where T : class, IToken =>
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueConvert<T, U> convert) where T : class, IToken =>
             OneValueRule(type, u, (p, a) => a.Satisfied(), convert);
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, DataProcessor<U> u, OneValueCanConvert<T, U> canConvert, OneValueConvert<T, U> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IDataProcessor>(u), p => canConvert(p, u), p => convert(p, u.GetValue()));
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueCanConvert<T, U> canConvert, OneValueConvert<T, U> convert) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u), p => canConvert(p, u), p => convert(p, u.GetValue()));
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
             TwoValueRule(type, u, v, (p, a, b) => AllSatisfied(a, b), convert);
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, TwoValueCanConvert<T, U, V> canConvert, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IDataProcessor>(u, v), p => canConvert(p, u, v), p => convert(p, u.GetValue(), v.GetValue()));
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueCanConvert<T, U, V> canConvert, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v), p => canConvert(p, u, v), p => convert(p, u.GetValue(), v.GetValue()));
 
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
             ThreeValueRule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), convert);
 
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, ThreeValueCanConvert<T, U, V, W> canConvert, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IDataProcessor>(u, v, w), p => canConvert(p, u, v, w), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue()));
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueCanConvert<T, U, V, W> canConvert, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w), p => canConvert(p, u, v, w), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue()));
 
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
             FourValueRule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), convert);
 
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, DataProcessor<U> u, DataProcessor<V> v, DataProcessor<W> w, DataProcessor<X> x, FourValueCanConvert<T, U, V, W, X> canConvert, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IDataProcessor>(u, v, w, x), p => canConvert(p, u, v, w, x), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueCanConvert<T, U, V, W, X> canConvert, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => canConvert(p, u, v, w, x), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
 
         //Utility delegates to efficiently create Rule Processors
         public delegate bool CanConvert<T>(T t);
-        delegate bool OneValueCanConvert<T, U>(T t, DataProcessor<U> a);
-        delegate bool TwoValueCanConvert<T, U, V>(T t, DataProcessor<U> a, DataProcessor<V> b);
-        delegate bool ThreeValueCanConvert<T, U, V, W>(T t, DataProcessor<U> a, DataProcessor<V> b, DataProcessor<W> c);
-        delegate bool FourValueCanConvert<T, U, V, W, X>(T t, DataProcessor<U> a, DataProcessor<V> b, DataProcessor<W> c, DataProcessor<X> d);
+        delegate bool OneValueCanConvert<T, U>(T t, Match<U> a);
+        delegate bool TwoValueCanConvert<T, U, V>(T t, Match<U> a, Match<V> b);
+        delegate bool ThreeValueCanConvert<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
+        delegate bool FourValueCanConvert<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
 
         public delegate object Convert<T>(T t);
         delegate object OneValueConvert<T, U>(T t, U a);

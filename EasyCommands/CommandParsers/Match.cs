@@ -20,7 +20,7 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
 
-        public interface IDataProcessor {
+        public interface IMatch {
             void Clear();
             bool SetValue(object p);
             bool Satisfied();
@@ -29,7 +29,7 @@ namespace IngameScript {
         }
 
         //Required Data Processors
-        public class DataProcessor<T> : IDataProcessor {
+        public class Match<T> : IMatch {
             T value;
             public bool left, right, required;
             public virtual T GetValue() => value;
@@ -44,29 +44,29 @@ namespace IngameScript {
             public virtual void Clear() => value = default(T);
         }
 
-        static DataProcessor<T> requiredRight<T>() => required<T>(false, true);
-        static DataProcessor<T> requiredLeft<T>() => required<T>(true, false);
-        static DataProcessor<T> requiredEither<T>() => required<T>(true, true);
-        static DataProcessor<T> required<T>(bool left, bool right) => new DataProcessor<T> {
+        static Match<T> requiredRight<T>() => required<T>(false, true);
+        static Match<T> requiredLeft<T>() => required<T>(true, false);
+        static Match<T> requiredEither<T>() => required<T>(true, true);
+        static Match<T> required<T>(bool left, bool right) => new Match<T> {
             left = left,
             right = right
         };
 
         //Optional Data Processors
-        public class OptionalDataProcessor<T> : DataProcessor<T> {
+        public class OptionalMatch<T> : Match<T> {
             public override bool Satisfied() => true;
         }
 
-        static OptionalDataProcessor<T> optionalRight<T>() => optional<T>(false, true);
-        static OptionalDataProcessor<T> optionalLeft<T>() => optional<T>(true, false);
-        static OptionalDataProcessor<T> optionalEither<T>() => optional<T>(true, true);
-        static OptionalDataProcessor<T> optional<T>(bool left, bool right) => new OptionalDataProcessor<T> {
+        static OptionalMatch<T> optionalRight<T>() => optional<T>(false, true);
+        static OptionalMatch<T> optionalLeft<T>() => optional<T>(true, false);
+        static OptionalMatch<T> optionalEither<T>() => optional<T>(true, true);
+        static OptionalMatch<T> optional<T>(bool left, bool right) => new OptionalMatch<T> {
             left = left,
             right = right
         };
 
         //ListDataProcessors
-        public class ListDataProcessor<T> : DataProcessor<List<T>> {
+        public class ListMatch<T> : Match<List<T>> {
             List<T> values = NewList<T>();
             public override bool SetValue(object p) {
                 if (p is T) values.Add((T)p);
@@ -77,15 +77,15 @@ namespace IngameScript {
             public override void Clear() => values.Clear();
         }
 
-        static ListDataProcessor<T> rightList<T>(bool required) => list<T>(false, true, required);
-        static ListDataProcessor<T> leftList<T>(bool required) => list<T>(true, false, required);
-        static ListDataProcessor<T> eitherList<T>(bool required) => list<T>(true, true, required);
-        static ListDataProcessor<T> list<T>(bool left, bool right, bool required) => new ListDataProcessor<T> {
+        static ListMatch<T> rightList<T>(bool required) => list<T>(false, true, required);
+        static ListMatch<T> leftList<T>(bool required) => list<T>(true, false, required);
+        static ListMatch<T> eitherList<T>(bool required) => list<T>(true, true, required);
+        static ListMatch<T> list<T>(bool left, bool right, bool required) => new ListMatch<T> {
             left = left,
             right = right,
             required = required
         };
 
-        static bool AllSatisfied(params IDataProcessor[] processors) => processors.All(p => p.Satisfied());
+        static bool AllSatisfied(params IMatch[] processors) => processors.All(p => p.Satisfied());
     }
 }
