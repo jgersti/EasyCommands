@@ -53,7 +53,7 @@ namespace IngameScript {
         public class PrintToken : SimpleToken { }
         public class Selftoken : SimpleToken { }
         public class GlobalToken : SimpleToken { }
-        public class IgnoreToken : SimpleToken { }
+        //public class IgnoreToken : SimpleToken { }
         public class ThatToken : SimpleToken { }
         public class KeyedVariableToken : SimpleToken { }
         public class TernaryConditionIndicatorToken : SimpleToken { }
@@ -181,6 +181,10 @@ namespace IngameScript {
         public class ListIndexToken : ValueToken<ListIndexVariable> {
             public ListIndexToken(ListIndexVariable v) : base(v) {}
         }
+
+        //public class ListXXXToken : ValueToken<IVariable> {
+        //    public ListXXXToken(IVariable v) : base(v) {}
+        //}
 
         public class IndexSelectorToken : ValueToken<IVariable> {
             public IndexSelectorToken(IVariable value) : base(value) {}

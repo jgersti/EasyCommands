@@ -25,7 +25,18 @@ namespace IngameScript {
             public static ILookup<Type, IParameterProcessor> parameterProcessorsByParameterType;
             public static IList<IParameterProcessor> parameterProcessors = new List<IParameterProcessor>()  {
                 new ParenthesisProcessor(),
+
+                //TwoValueRule(Type<OpenParenthesisToken>, optionalRight<IToken>(), requiredRight<CloseParenthesisToken>(),
+                //    (o, token, c) => token != null ? NewList(token) : NewList<IToken>()),
+
                 new ListProcessor(),
+
+                //ThreeValueRule(Type<OpenBracketToken>, rightList<ListXXXToken>(false), optionalRight<ValueToken<IVariable>>(), requiredRight<CloseBracketToken>(),
+                //    (o, list, tail, c) => {
+                //        var indices = NewKeyedList(list.Select(v => v.value));
+                //        if (tail != null) indices.keyedValues.Add(AsKeyedVariable(tail.value));
+                //        return new ListToken(GetStaticVariable(indices));
+                //        }),
 
                 //SelectorVariableSelectorProcessor
                 ThreeValueRule(Type<VariableSelectorToken>, requiredRight<AmbiguousStringToken>(), optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
@@ -37,7 +48,7 @@ namespace IngameScript {
                 TwoValueRule(Type<AmbiguousStringToken>, requiredRight<BlockTypeToken>(), optionalRight<GroupToken>(),
                     (p, b, g) => new SelectorToken(new BlockSelector(b.value, g != null, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
 
-            //AmbiguousStringProcessor
+                //AmbiguousStringProcessor
                 new BranchingProcessor<AmbiguousStringToken>(
                     NoValueRule(Type<AmbiguousStringToken>,
                         p => p.subTokens.Count > 0 && p.subTokens[0] is AmbiguousToken,
@@ -66,9 +77,6 @@ namespace IngameScript {
 
                 OneValueRule(Type<ListToken>, requiredLeft<VariableToken>(),
                     (list, variable) => new ListIndexToken(new ListIndexVariable(variable.value, list.value))),
-
-                OneValueRule(Type<ListIndexToken>, requiredLeft<AssignmentToken>(),
-                    (index, assignment) => new ListIndexAssignmentToken(index.value, assignment.value)),
 
                 //SelfSelectorProcessor
                 TwoValueRule(Type<Selftoken>, optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
@@ -110,8 +118,14 @@ namespace IngameScript {
 
                 new MultiListProcessor(),
 
-                //IgnoreProcessor
-
+                //OneValueRule(Type<ListToken>, leftList<ListToken>(false),
+                //    (tail, list) => {
+                //        list.Reverse();
+                //        list.Add(tail);
+                //        var tokens = NewList<IToken>(new ListIndexToken(new ListIndexVariable(list.First().value, EmptyList())));
+                //        tokens.AddRange(list.Skip(1));
+                //        return tokens;
+                //    }),
 
                 //FunctionProcessor
                 OneValueRule(Type<VariableToken>, requiredLeft<FunctionToken>(),
@@ -122,30 +136,13 @@ namespace IngameScript {
 
                 //ValuePropertyProcessor
                 //Needs to check left, then right, which is opposite the typical checks.
-                OneValueRule(Type<ValuePropertyToken>, requiredLeft<VariableToken>(),
-                    (p, v) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
-                OneValueRule(Type<ValuePropertyToken>, requiredRight<VariableToken>(),
-                    (p, v) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
-
-                //AssignmentProcessor
-                TwoValueRule(Type<AssignmentToken>, optionalRight<GlobalToken>(), requiredRight<VariableToken>(),
-                    (p, g, name) => AllSatisfied(g, name) && (name.GetValue().value is AmbiguousStringVariable),
-                    (p, g, name) => new VariableAssignmentToken(((AmbiguousStringVariable)name.value).value, p.value, g != null)),
-
-                //IncreaseProcessor
-                OneValueRule(Type<IncreaseToken>, requiredRight<VariableToken>(),
-                    (p, name) => name.Satisfied() && (name.GetValue().value is AmbiguousStringVariable),
-                    (p, name) => new VariableIncrementToken(((AmbiguousStringVariable)name.value).value, p.value)),
-
-                //IncrementProcessor
-                OneValueRule(Type<IncrementToken>, requiredLeft<VariableToken>(),
-                    (p, name) => name.Satisfied() && (name.GetValue().value is AmbiguousStringVariable),
-                    (p, name) => new VariableIncrementToken(((AmbiguousStringVariable)name.value).value, p.value)),
+                TwoValueRule(Type<ValuePropertyToken>, requiredLeft<VariableToken>(), optionalRight<IteratorAssignmentToken>(),
+                    (p, v, _) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
+                TwoValueRule(Type<ValuePropertyToken>, requiredRight<VariableToken>(), optionalRight<IteratorAssignmentToken>(),
+                    (p, v, _) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
 
                 //Primitive Processor
                 NoValueRule(Type<BooleanToken>, b => new VariableToken(GetStaticVariable(b.value))),
-
-                //NoValueRule(Type<IteratorAssignmentToken>, p => NewList<IToken>()),
 
                 //ListPropertyAggregationProcessor
                 OneValueRule(Type<ListIndexToken>, requiredLeft<PropertyAggregationToken>(),
@@ -154,6 +151,9 @@ namespace IngameScript {
                 //ListComparisonProcessor
                 ThreeValueRule(Type<ListIndexToken>, requiredRight<ComparisonToken>(), requiredRight<VariableToken>(), optionalLeft<AggregationModeToken>(),
                     (list, comparison, value, aggregation) => new VariableToken(new ListAggregateConditionVariable(aggregation?.value ?? AggregationMode.ALL, list.value, comparison.value, value.value))),
+
+                OneValueRule(Type<ListIndexToken>, requiredLeft<AssignmentToken>(),
+                    (index, assignment) => new ListIndexAssignmentToken(index.value, assignment.value)),
 
                 //ListIndexAsVariableProcessor
                 NoValueRule(Type<ListIndexToken>, list => new VariableToken(list.value)),
@@ -164,11 +164,9 @@ namespace IngameScript {
                     NoValueRule(Type<MinusToken>, minus => new BinaryOperandToken(BinaryOperator.SUBTRACT, 3))
                 ),
 
-                NoValueRule(Type<AbsoluteToken>, p => NewList<IToken>()),
-
                 //RoundProcessor
                 new BranchingProcessor<RoundToken>(
-                    NoValueRule(Type<RoundToken>, round => new BinaryOperandToken(BinaryOperator.ROUND, 1)),
+                    OneValueRule(Type<RoundToken>, optionalRight<AbsoluteToken>(), (round, _) => new BinaryOperandToken(BinaryOperator.ROUND, 1)),
                     NoValueRule(Type<RoundToken>, round => new LeftUnaryOperationToken(UnaryOperator.ROUND)),
                     NoValueRule(Type<RoundToken>, round => new UnaryOperationToken(UnaryOperator.ROUND))
                 ),
@@ -231,6 +229,8 @@ namespace IngameScript {
                 //KeyedVariableProcessor
                 TwoValueRule(Type<KeyedVariableToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                     (keyed, left, right) => new VariableToken(new KeyedVariable(left.value, right.value))),
+
+                //OneValueRule(Type<ListSeparatorToken>, requiredLeft<ValueToken<IVariable>>(), (s, var) => new ListXXXToken(var.value)),
 
                 //BlockConditionProcessors
                 ThreeValueRule(Type<AndToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
@@ -295,6 +295,24 @@ namespace IngameScript {
                     NoValueRule(Type<AmbiguousSelectorToken>, p => new SelectorToken(p.value))
                 ),
 
+                //AssignmentProcessor
+                TwoValueRule(Type<AssignmentToken>, optionalRight<GlobalToken>(), requiredRight<VariableToken>(),
+                    (p, g, name) => AllSatisfied(g, name) && (name.GetValue().value is AmbiguousStringVariable),
+                    (p, g, name) => new VariableAssignmentToken(((AmbiguousStringVariable)name.value).value, p.value, g != null)),
+
+                //IncreaseProcessor
+                OneValueRule(Type<IncreaseToken>, requiredRight<VariableToken>(),
+                    (p, name) => name.Satisfied() && (name.GetValue().value is AmbiguousStringVariable),
+                    (p, name) => new VariableIncrementToken(((AmbiguousStringVariable)name.value).value, p.value)),
+
+                //IncrementProcessor
+                OneValueRule(Type<IncrementToken>, requiredLeft<VariableToken>(),
+                    (p, name) => name.Satisfied() && (name.GetValue().value is AmbiguousStringVariable),
+                    (p, name) => new VariableIncrementToken(((AmbiguousStringVariable)name.value).value, p.value)),
+
+                //NoValueRule(Type<IteratorAssignmentToken>, p => NewList<IToken>()),
+                NoValueRule(Type<AbsoluteToken>, p => NewList<IToken>()),
+
                 //AmbiguousSelectorPropertyProcessor
                 new BranchingProcessor<SelectorToken>(
                     BlockCommandProcessor(),
@@ -309,8 +327,6 @@ namespace IngameScript {
                             return new CommandToken(new BlockCommand(s.value, (b, e) =>
                                 b.UpdatePropertyValue(e, property.WithDirection(direction).Resolve(b))));
                         })),
-
-                //NoValueRule(Type<RelativeToken>, b => NewList<IToken>()),
 
                 //ListIndexAssignmentProcessor
                 OneValueRule(Type<ListIndexAssignmentToken>, requiredRight<VariableToken>(),

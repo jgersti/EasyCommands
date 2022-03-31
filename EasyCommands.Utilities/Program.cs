@@ -20,8 +20,8 @@ namespace EasyCommands.Utilities {
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
             //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
             //PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
-            //PrintParser(@"assign myList[1, 2, 3] to [0]");
-            ExecuteSomething();
+            PrintParser(@"assign myValue to [1, 2, 3][0]");
+            //ExecuteSomething();
             //TestPrototypeGrammar("[Assignment][VariableSelector][AmbiguousString][BlockType][Group][OpenBracket][AmbiguousString][ListSeparator][AmbiguousString][CloseBracket][Property][Ignore][AmbiguousString][Comparison][AmbiguousString][TernaryConditionIndicator][AmbiguousString][TernaryConditionSeparator][AmbiguousString];");
         }
 
