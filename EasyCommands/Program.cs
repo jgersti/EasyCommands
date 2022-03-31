@@ -51,8 +51,8 @@ namespace IngameScript {
         );
 
         String defaultFunction;
-        String customData = null;
-        List<String> commandStrings = NewList<String>();
+        String customData;
+        List<String> commandStrings;
 
         public void ClearAllState() {
             BroadCastListenerAction(l => true, listener => {
