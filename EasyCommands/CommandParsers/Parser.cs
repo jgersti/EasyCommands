@@ -382,11 +382,11 @@ namespace IngameScript {
                 //condition command
                 //condition command otherwise command
                 ThreeValueRule(Type<ConditionToken>, requiredRight<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
-                    ConvertConditionalCommand),
+                    ApplyContition),
                 //command condition
                 //command condition otherwise command
                 ThreeValueRule(Type<ConditionToken>, requiredLeft<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
-                    ConvertConditionalCommand)
+                    ApplyContition)
             };
 
             public static Action<string> Logger;

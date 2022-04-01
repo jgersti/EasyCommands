@@ -31,7 +31,7 @@ namespace IngameScript {
         //Required Data Processors
         public class Match<T> : IMatch {
             T value;
-            public bool left, right, required;
+            public bool left, right;
             public virtual T GetValue() => value;
             public virtual bool SetValue(object p) {
                 var setValue = value == null && p is T;
@@ -67,6 +67,7 @@ namespace IngameScript {
 
         //ListDataProcessors
         public class ListMatch<T> : Match<List<T>> {
+            public bool required;
             List<T> values = NewList<T>();
             public override bool SetValue(object p) {
                 if (p is T) values.Add((T)p);

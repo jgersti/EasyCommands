@@ -86,7 +86,7 @@ namespace EasyCommands.Utilities {
         static IEnumerable<string> GetPattern<T>(BranchingProcessor<T> processor) where T : class, IToken => processor.processors.OfType<dynamic>().SelectMany<dynamic, string>(p => GetPattern(p));
         static IEnumerable<string> GetPattern<T>(ParameterProcessor<T> processor) where T : class, IToken => new[] { "Pattern: <null>" };
         static IEnumerable<string> GetPattern<T>(RuleProcessor<T> processor) where T : class, IToken {
-            var payload = processor.processors;
+            var payload = processor.matches;
 
             var either = payload.OfType<dynamic>().Where(p => p.left && p.right).Cast<object>();
             var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"~{GetParameter(p)}" : GetParameter(p));

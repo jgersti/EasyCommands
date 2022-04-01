@@ -23,18 +23,19 @@ namespace IngameScript {
         public interface IParameterProcessor : IComparable<IParameterProcessor> {
             int Rank { get; set; }
             Type GetProcessedTypes();
-            bool CanProcess(IToken p);
-            bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches);
+            bool CanProcess(IToken t);
+            bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches);
         }
 
         public abstract class ParameterProcessor<T> : IParameterProcessor where T : class, IToken {
             public int Rank { get; set; }
             public virtual Type GetProcessedTypes() => typeof(T);
             public int CompareTo(IParameterProcessor other) => Rank.CompareTo(other.Rank);
-            public bool CanProcess(IToken p) => p is T;
-            public abstract bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches);
+            public bool CanProcess(IToken t) => t is T;
+            public abstract bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches);
         }
 
+        // ToDo: remove
         public class ParenthesisProcessor : ParameterProcessor<OpenParenthesisToken> {
             public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
@@ -67,6 +68,7 @@ namespace IngameScript {
             }
         }
 
+        // ToDo: remove
         public class ListProcessor : ParameterProcessor<OpenBracketToken> {
             public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 finalParameters = null;
@@ -96,6 +98,7 @@ namespace IngameScript {
             }
         }
 
+        // ToDo: remove
         public class MultiListProcessor : ParameterProcessor<ListToken> {
             public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
                 while (i > 1 && p[i - 1] is ListToken) i--;
@@ -105,6 +108,7 @@ namespace IngameScript {
             }
         }
 
+        // ToDo: find a way to make the branching lazy
         public class BranchingProcessor<T> : ParameterProcessor<T> where T : class, IToken {
             public List<ParameterProcessor<T>> processors;
 
@@ -112,10 +116,10 @@ namespace IngameScript {
                 processors = NewList(p);
             }
 
-            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
-                finalParameters = null;
-                var eligibleProcessors = processors.Where(processor => processor.CanProcess(p[i])).ToList();
-                var copy = new List<IToken>(p);
+            public override bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches) {
+                result = null;
+                var eligibleProcessors = processors.Where(processor => processor.CanProcess(tokens[i])).ToList();
+                var copy = new List<IToken>(tokens);
 
                 bool processed = false;
                 foreach (IParameterProcessor processor in eligibleProcessors) {
@@ -126,7 +130,7 @@ namespace IngameScript {
                             branches.Insert(0, additionalCopy);
                         }
                     } else {
-                        processed = processor.Process(p, i, out finalParameters, branches);
+                        processed = processor.Process(tokens, i, out result, branches);
                     }
                 }
                 return processed;
@@ -135,9 +139,10 @@ namespace IngameScript {
 
         static RuleProcessor<BinaryOperandToken> BiOperandProcessor(int tier) =>
             TwoValueRule(Type<BinaryOperandToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
-                (operand, left, right) => operand.tier == tier && AllSatisfied(left, right),
-                (operand, left, right) => new VariableToken(new BinaryOperationVariable(operand.value, left.value, right.value)));
+                (op, left, right) => op.tier == tier && AllSatisfied(left, right),
+                (op, left, right) => new VariableToken(new BinaryOperationVariable(op.value, left.value, right.value)));
 
+        // ToDo: rewrite that mess
         static RuleProcessor<SelectorToken> BlockCommandProcessor() {
             var assignmentProcessor = eitherList<AssignmentToken>(true);
             var increaseProcessor = requiredLeft<IncreaseToken>();
@@ -159,8 +164,8 @@ namespace IngameScript {
                 notProcessor,
                 relativeProcessor);
 
-            CanConvert<SelectorToken> canConvert = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
-            Convert<SelectorToken> convert = p => {
+            Validate<SelectorToken> canConvert = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
+            Apply<SelectorToken> convert = p => {
                 PropertySupplier propertySupplier = propertyProcessor.Satisfied() ? propertyProcessor.GetValue().value : new PropertySupplier();
                 if (directionProcessor.Satisfied()) propertySupplier = propertySupplier.WithDirection(directionProcessor.GetValue().value);
 
@@ -194,101 +199,90 @@ namespace IngameScript {
         }
 
         // this no rule
-        static IToken ConvertConditionalCommand(ConditionToken condition, CommandToken metFetcher, ElseToken otherwise, CommandToken notMetFetcher) {
+        static IToken ApplyContition(ConditionToken condition, CommandToken metFetcher, ElseToken otherwise, CommandToken notMetFetcher) {
             Command metCommand = metFetcher.value;
             Command notMetCommand = otherwise != null ? notMetFetcher.value : new NullCommand();
-            if (condition.swapCommands) {
-                var temp = metCommand;
-                metCommand = notMetCommand;
-                notMetCommand = temp;
-            }
-            return new CommandToken(new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate));
+            return new CommandToken(condition.swapCommands
+                ? new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate)
+                : new ConditionalCommand(condition.value, notMetCommand, metCommand, condition.alwaysEvaluate));
         }
 
         //Rule Processors
         public class RuleProcessor<T> : ParameterProcessor<T> where T : class, IToken {
-            public List<IMatch> processors;
-            public CanConvert<T> canConvert;
-            public Convert<T> convert;
+            public List<IMatch> matches;
+            public Validate<T> validate;
+            public Apply<T> apply;
 
-            public RuleProcessor(List<IMatch> proc, CanConvert<T> canConv, Convert<T> conv) {
-                processors = proc;
-                canConvert = canConv;
-                convert = conv;
+            public RuleProcessor(List<IMatch> m, Validate<T> val, Apply<T> app) {
+                matches = m;
+                validate = val;
+                apply = app;
             }
 
-            public override bool Process(List<IToken> p, int i, out List<IToken> finalParameters, List<List<IToken>> branches) {
-                finalParameters = null;
-                processors.ForEach(dp => dp.Clear());
+            public override bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches) {
+                result = null;
+                matches.ForEach(m => m.Clear());
                 int j = i + 1;
-                while (j < p.Count) {
-                    if (processors.Exists(dp => dp.Right(p[j]))) j++;
+                while (j < tokens.Count) {
+                    if (matches.Exists(m => m.Right(tokens[j]))) j++;
                     else break;
                 }
 
                 int k = i;
                 while (k > 0) {
-                    if (processors.Exists(dp => dp.Left(p[k - 1]))) k--;
+                    if (matches.Exists(m => m.Left(tokens[k - 1]))) k--;
                     else break;
                 }
 
-                T hook = (T)p[i];
-                if (!canConvert(hook)) return false;
-                var converted = convert(hook);
+                T anchor = (T)tokens[i];
+                if (!validate(anchor)) return false;
 
-                if (converted is IToken)
-                    finalParameters = NewList((IToken)converted);
-                else if (converted is List<IToken>)
-                    finalParameters = (List<IToken>)converted;
-                else
-                    throw new Exception("Final parameters must be CommandParameter");
+                var product = apply(anchor);
+                result = product as List<IToken> ?? (product is IToken ? NewList((IToken)product) : null);
+                if (result == null) throw new Exception("Result must be a Token");
 
-                p.RemoveRange(k, j - k);
-                p.InsertRange(k, finalParameters);
+                tokens.RemoveRange(k, j - k);
+                tokens.InsertRange(k, result);
                 return true;
             }
         }
 
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Convert<T> convert) where T : class, IToken => NoValueRule(type, p => true, convert);
+        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Apply<T> apply) where T : class, IToken =>
+            NoValueRule(type, p => true, apply);
+        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Validate<T> validate, Apply<T> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(), validate, apply);
 
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, CanConvert<T> canConvert, Convert<T> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(), canConvert, convert);
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueApply<T, U> apply) where T : class, IToken =>
+            OneValueRule(type, u, (p, a) => a.Satisfied(), apply);
+        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueValidate<T, U> validate, OneValueApply<T, U> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u), p => validate(p, u), p => apply(p, u.GetValue()));
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueConvert<T, U> convert) where T : class, IToken =>
-            OneValueRule(type, u, (p, a) => a.Satisfied(), convert);
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueApply<T, U, V> apply) where T : class, IToken =>
+            TwoValueRule(type, u, v, (p, a, b) => AllSatisfied(a, b), apply);
+        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueValidate<T, U, V> validate, TwoValueApply<T, U, V> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v), p => validate(p, u, v), p => apply(p, u.GetValue(), v.GetValue()));
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueCanConvert<T, U> canConvert, OneValueConvert<T, U> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u), p => canConvert(p, u), p => convert(p, u.GetValue()));
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueApply<T, U, V, W> apply) where T : class, IToken =>
+            ThreeValueRule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), apply);
+        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueValidate<T, U, V, W> validate, ThreeValueApply<T, U, V, W> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w), p => validate(p, u, v, w), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue()));
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
-            TwoValueRule(type, u, v, (p, a, b) => AllSatisfied(a, b), convert);
-
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueCanConvert<T, U, V> canConvert, TwoValueConvert<T, U, V> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v), p => canConvert(p, u, v), p => convert(p, u.GetValue(), v.GetValue()));
-
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
-            ThreeValueRule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), convert);
-
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueCanConvert<T, U, V, W> canConvert, ThreeValueConvert<T, U, V, W> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v, w), p => canConvert(p, u, v, w), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue()));
-
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
-            FourValueRule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), convert);
-
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueCanConvert<T, U, V, W, X> canConvert, FourValueConvert<T, U, V, W, X> convert) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => canConvert(p, u, v, w, x), p => convert(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueApply<T, U, V, W, X> apply) where T : class, IToken =>
+            FourValueRule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), apply);
+        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueValidate<T, U, V, W, X> validate, FourValueApply<T, U, V, W, X> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => validate(p, u, v, w, x), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
 
         //Utility delegates to efficiently create Rule Processors
-        public delegate bool CanConvert<T>(T t);
-        delegate bool OneValueCanConvert<T, U>(T t, Match<U> a);
-        delegate bool TwoValueCanConvert<T, U, V>(T t, Match<U> a, Match<V> b);
-        delegate bool ThreeValueCanConvert<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
-        delegate bool FourValueCanConvert<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
+        public delegate bool Validate<T>(T t);
+        delegate bool OneValueValidate<T, U>(T t, Match<U> a);
+        delegate bool TwoValueValidate<T, U, V>(T t, Match<U> a, Match<V> b);
+        delegate bool ThreeValueValidate<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
+        delegate bool FourValueValidate<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
 
-        public delegate object Convert<T>(T t);
-        delegate object OneValueConvert<T, U>(T t, U a);
-        delegate object TwoValueConvert<T, U, V>(T t, U a, V b);
-        delegate object ThreeValueConvert<T, U, V, W>(T t, U a, V b, W c);
-        delegate object FourValueConvert<T, U, V, W, X>(T t, U a, V b, W c, X d);
+        public delegate object Apply<T>(T t);
+        delegate object OneValueApply<T, U>(T t, U a);
+        delegate object TwoValueApply<T, U, V>(T t, U a, V b);
+        delegate object ThreeValueApply<T, U, V, W>(T t, U a, V b, W c);
+        delegate object FourValueApply<T, U, V, W, X>(T t, U a, V b, W c, X d);
     }
 }
