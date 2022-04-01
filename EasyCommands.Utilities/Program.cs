@@ -14,58 +14,76 @@ namespace EasyCommands.Utilities {
         static void Main(string[] args) {
             Console.OutputEncoding = Encoding.UTF8;
 
+            if (args.Length == 0) {
+                Console.WriteLine("Nothing to do.");
+                return;
+            }
+
+            switch(args[0]) {
+                case "rules" when args.Length == 2 && args[1] == "type":
+                    PrintRulesByType();
+                    break;
+                case "rules" when args.Length == 2 && args[1] == "rank":
+                case "rules" when args.Length == 1:
+                    PrintRulesByRank();
+                    break;
+                case "parse" when args.Length == 2:
+                    ParseLine(args[1]);
+                    break;
+                default:
+                    Console.WriteLine("Invalid Arguments.");
+                    break;
+            }
+
             //TestExpressionGrammar();
             //TestMetaGrammar();
-            //TestSomething('\t', '\n', '\r',' ');
-            //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
-            //TestSomething('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
-            //PrintParser(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
-            PrintParser(@"assign myValue to [1, 2, 3][0]");
-            //ExecuteSomething();
             //TestPrototypeGrammar("[Assignment][VariableSelector][AmbiguousString][BlockType][Group][OpenBracket][AmbiguousString][ListSeparator][AmbiguousString][CloseBracket][Property][Ignore][AmbiguousString][Comparison][AmbiguousString][TernaryConditionIndicator][AmbiguousString][TernaryConditionSeparator][AmbiguousString];");
+            //ParseLine(@"set $groupName pistons[""Piston L"", ""Piston R""] velocities to rState == 0 ? detachedSpeed : attachedSpeed");
+            //ParseLine(@"set the ""test terminal 1"" ""SomeNumber"" property to 1");
+
         }
 
-        static void ExecuteSomething() {
+        static void PrintRulesByType() {
             foreach (var p in Parser.parameterProcessorsByParameterType) {
                 var name = p.Key.GetGenericName();
                 Console.WriteLine($"{name}\n{"".PadRight(name.Length, '-')}\n");
                 foreach (var s in RulesToString(p))
                     Console.WriteLine(s);
             }
-            //Parser.parameterProcessors.Select(RuleToString).ForEach(s => Console.WriteLine(s));
         }
+         static void PrintRulesByRank() => Parser.parameterProcessors.Select(RuleToString).ForEach(s => Console.WriteLine(s));
 
-        static void TestExpressionGrammar() {
-            string rawGrammar = File.ReadAllText("Resources\\expression.grammar", Encoding.UTF8);
+        //static void TestExpressionGrammar() {
+        //    string rawGrammar = File.ReadAllText("Resources\\expression.grammar", Encoding.UTF8);
 
-            string rawInput = @"discriminant=b*b-4*a*c;";
+        //    string rawInput = @"discriminant=b*b-4*a*c;";
 
-            string topRule = "Program";
-            string[] recovery = new[] { topRule, "Statement" };
+        //    string topRule = "Program";
+        //    string[] recovery = new[] { topRule, "Statement" };
 
-            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
-            var table = grammar.Parse(rawInput);
+        //    var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
+        //    var table = grammar.Parse(rawInput);
 
-            ParserInfo.PrintParseResult(topRule, table, recovery, false);
-        }
-        static void TestMetaGrammar() {
-            ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
-            Console.WriteLine();
-            ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
-        }
-        static void TestPrototypeGrammar(string input) {
-            string rawGrammar = File.ReadAllText("Resources\\prototype.grammar", Encoding.UTF8);
+        //    ParserInfo.PrintParseResult(topRule, table, recovery, false);
+        //}
+        //static void TestMetaGrammar() {
+        //    ParserInfo.PrintClauses(Pika.Grammar.Meta.Grammar);
+        //    Console.WriteLine();
+        //    ParserInfo.PrintRules(Pika.Grammar.Meta.Grammar);
+        //}
+        //static void TestPrototypeGrammar(string input) {
+        //    string rawGrammar = File.ReadAllText("Resources\\prototype.grammar", Encoding.UTF8);
 
-            string topRule = "Line";
-            string[] recovery = new[] { topRule };
+        //    string topRule = "Line";
+        //    string[] recovery = new[] { topRule };
 
-            var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
-            var table = grammar.Parse(input);
+        //    var grammar = Pika.Grammar.Meta.Parse(rawGrammar);
+        //    var table = grammar.Parse(input);
 
-            ParserInfo.PrintParseResult(topRule, table, recovery, false);
-        }
+        //    ParserInfo.PrintParseResult(topRule, table, recovery, false);
+        //}
 
-        static void PrintParser(string line) {
+        static void ParseLine(string line) {
             Parser.Logger = Console.WriteLine;
             Parser.FunctionLookup = s => false;
 
@@ -92,12 +110,12 @@ namespace EasyCommands.Utilities {
             var left = payload.OfType<dynamic>().Where(p => p.left).Select<dynamic, string>(p => either.Contains((object)p) ? $"~{GetParameter(p)}" : GetParameter(p));
             var right = payload.OfType<dynamic>().Where(p => p.right).Select<dynamic, string>(p => either.Contains((object)p) ? $"~{GetParameter(p)}" : GetParameter(p));
 
-            var pattern = new[] { "Pattern:" }
-                .Concat(left.Reverse())
-                .Concat(new[] { $"^{typeof(T).GetGenericName()}" })
+            var pattern = Once("Pattern:")
+                .Concat(left)
+                .Concat(Once($"^{typeof(T).GetGenericName()}"))
                 .Concat(right);
 
-            return new[] { string.Join(" ", pattern) };
+            return Once(string.Join(" ", pattern));
         }
 
         static string GetParameter<T>(Match<T> processor) => $"{typeof(T).GetGenericName()}";
@@ -106,8 +124,6 @@ namespace EasyCommands.Utilities {
     }
 
     public static class MyExtensionMethods {
-
-        public static IEnumerable<string> AsEnumerable(this string s) => Enumerable.Repeat(s, 1);
         public static string GetGenericName(this Type type, int? depth = null) =>
             type.IsGenericType && (depth == null || depth >= 0)
             ? $"{type.Name.Substring(0, type.Name.IndexOf('`'))}<{String.Join(",", type.GetGenericArguments().Select(t => t.GetGenericName(depth == null ? null : depth-1)))}>"
