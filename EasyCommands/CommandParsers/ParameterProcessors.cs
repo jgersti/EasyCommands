@@ -222,17 +222,36 @@ namespace IngameScript {
             public override bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches) {
                 result = null;
                 matches.ForEach(m => m.Clear());
-                int j = i + 1;
-                while (j < tokens.Count) {
-                    if (matches.Exists(m => m.Right(tokens[j]))) j++;
-                    else break;
-                }
 
+                int j = i+1;
+                for (int n = 0; n < matches.Count; ++n)
+                    while(j < tokens.Count) {
+                        if (matches[n].Right(tokens[j]))
+                            j++;
+                        else
+                            break;
+                    }
+
+                //scan in reverse
                 int k = i;
-                while (k > 0) {
-                    if (matches.Exists(m => m.Left(tokens[k - 1]))) k--;
-                    else break;
-                }
+                for (int n = matches.Count-1; n >= 0; --n)
+                    while (k > 0) {
+                        if (matches[n].Left(tokens[k-1]))
+                            k--;
+                        else
+                            break;
+                    }
+                //int j = i + 1;
+                //while (j < tokens.Count) {
+                //    if (matches.Exists(m => m.Right(tokens[j]))) j++;
+                //    else break;
+                //}
+
+                //int k = i;
+                //while (k > 0) {
+                //    if (matches.Exists(m => m.Left(tokens[k - 1]))) k--;
+                //    else break;
+                //}
 
                 T anchor = (T)tokens[i];
                 if (!validate(anchor)) return false;
