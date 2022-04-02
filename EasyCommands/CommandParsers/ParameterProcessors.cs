@@ -199,12 +199,12 @@ namespace IngameScript {
         }
 
         // this no rule
-        static IToken ApplyContition(ConditionToken condition, CommandToken metFetcher, ElseToken otherwise, CommandToken notMetFetcher) {
+        static IToken ApplyCondition(ConditionToken condition, CommandToken metFetcher, ElseToken otherwise, CommandToken notMetFetcher) {
             Command metCommand = metFetcher.value;
             Command notMetCommand = otherwise != null ? notMetFetcher.value : new NullCommand();
             return new CommandToken(condition.swapCommands
-                ? new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate)
-                : new ConditionalCommand(condition.value, notMetCommand, metCommand, condition.alwaysEvaluate));
+                ? new ConditionalCommand(condition.value, notMetCommand, metCommand, condition.alwaysEvaluate)
+                : new ConditionalCommand(condition.value, metCommand, notMetCommand, condition.alwaysEvaluate));
         }
 
         //Rule Processors
@@ -223,35 +223,19 @@ namespace IngameScript {
                 result = null;
                 matches.ForEach(m => m.Clear());
 
-                int j = i+1;
-                for (int n = 0; n < matches.Count; ++n)
-                    while(j < tokens.Count) {
-                        if (matches[n].Right(tokens[j]))
-                            j++;
-                        else
-                            break;
-                    }
-
-                //scan in reverse
-                int k = i;
-                for (int n = matches.Count-1; n >= 0; --n)
-                    while (k > 0) {
-                        if (matches[n].Left(tokens[k-1]))
-                            k--;
-                        else
-                            break;
-                    }
-                //int j = i + 1;
-                //while (j < tokens.Count) {
-                //    if (matches.Exists(m => m.Right(tokens[j]))) j++;
-                //    else break;
-                //}
+                //int j = i+1;
+                //for (int n = 0; n < matches.Count; ++n)
+                //    while (j < tokens.Count && matches[n].Right(tokens[j])) ++j;
 
                 //int k = i;
-                //while (k > 0) {
-                //    if (matches.Exists(m => m.Left(tokens[k - 1]))) k--;
-                //    else break;
-                //}
+                //for (int n = matches.Count - 1; n >= 0; --n)
+                //    while (k > 0 && matches[n].Left(tokens[k - 1])) --k;
+
+                int j = i + 1;
+                while (j < tokens.Count && matches.Exists(m => m.Right(tokens[j]))) j++;
+
+                int k = i;
+                while (k > 0 && matches.Exists(m => m.Left(tokens[k - 1]))) k--;
 
                 T anchor = (T)tokens[i];
                 if (!validate(anchor)) return false;
