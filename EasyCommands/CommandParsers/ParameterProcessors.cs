@@ -164,8 +164,8 @@ namespace IngameScript {
                 notProcessor,
                 relativeProcessor);
 
-            Validate<SelectorToken> canConvert = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
-            Apply<SelectorToken> convert = p => {
+            Validate<SelectorToken> validate = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
+            Apply<SelectorToken> apply = p => {
                 PropertySupplier propertySupplier = propertyProcessor.Satisfied() ? propertyProcessor.GetValue().value : new PropertySupplier();
                 if (directionProcessor.Satisfied()) propertySupplier = propertySupplier.WithDirection(directionProcessor.GetValue().value);
 
@@ -195,7 +195,7 @@ namespace IngameScript {
                 return new CommandToken(new BlockCommand(p.value, blockAction));
             };
 
-            return new RuleProcessor<SelectorToken>(processors, canConvert, convert);
+            return new RuleProcessor<SelectorToken>(processors, validate, apply);
         }
 
         // this no rule
