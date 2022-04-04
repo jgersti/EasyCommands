@@ -53,7 +53,6 @@ namespace IngameScript {
         public class PrintToken : SimpleToken { }
         public class Selftoken : SimpleToken { }
         public class GlobalToken : SimpleToken { }
-        //public class IgnoreToken : SimpleToken { }
         public class ThatToken : SimpleToken { }
         public class KeyedVariableToken : SimpleToken { }
         public class TernaryConditionIndicatorToken : SimpleToken { }
@@ -64,7 +63,7 @@ namespace IngameScript {
         public class CastToken : SimpleToken { }
         public class RelativeToken : SimpleToken { }
         public class AbsoluteToken : SimpleToken { }
-        public class IteratorAssignmentToken : SimpleToken { }
+        public class InToken : SimpleToken { }
 
         public class ListenToken : ValueToken<bool> {
             public ListenToken(bool v) : base(v) { }
@@ -152,6 +151,10 @@ namespace IngameScript {
                 subTokens = SubTokens.ToList();
                 isImplicit = impl;
             }
+        }
+
+        public class IdentifierToken : ValueToken<string> {
+            public IdentifierToken(string value) : base(value) { }
         }
 
         public class BooleanToken : ValueToken<bool> {

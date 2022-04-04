@@ -43,8 +43,8 @@ namespace IngameScript {
         public static bool AnyNotNull(params Object[] objects) => objects.Any(o => o != null);
 
         // misc stuff
-        static T findLast<T>(List<IToken> parameters) where T : class, IToken => parameters.OfType<T>().LastOrDefault();
-        static T identitiy<T>(T t) => t;
+        static T FindLast<T>(List<IToken> parameters) where T : class, IToken => parameters.OfType<T>().LastOrDefault();
+        static T Identitiy<T>(T t) => t;
 
         // Generate enumerations of words
         static IEnumerable<string> Words(params string[] words) => words;

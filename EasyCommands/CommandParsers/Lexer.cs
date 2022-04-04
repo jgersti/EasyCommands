@@ -63,7 +63,7 @@ namespace IngameScript {
                 AddWords(Words("global"), new GlobalToken());
                 AddWords(Words("by"), new RelativeToken());
                 AddWords(Words("to"), new AbsoluteToken());
-                AddWords(Words("in"), new IteratorAssignmentToken());
+                AddWords(Words("in"), new InToken());
 
                 //Value Words
                 AddWords(Words("on", "begin", "true", "start", "started", "resume", "resumed"), new BooleanToken(true));
