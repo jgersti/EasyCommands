@@ -64,9 +64,9 @@ namespace IngameScript {
                         name => new FunctionDefinitionToken(() => name.value)),
                     NoValueRule(Type<AmbiguousStringToken>,
                         s => {
-                            Primitive primitive;
+                            //Primitive primitive;
                             IVariable variable = s.isImplicit ? new AmbiguousStringVariable(s.value) : GetStaticVariable(s.value);
-                            if (s.isImplicit && Primitive.TryParse(s.value, out primitive)) variable = GetStaticVariable(primitive.value);
+                            //if (s.isImplicit && Primitive.TryParse(s.value, out primitive)) variable = GetStaticVariable(primitive.value);
                             return new VariableToken(variable);
                         })),
 

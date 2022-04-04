@@ -374,14 +374,18 @@ namespace IngameScript {
             public static List<IToken> GetTokens(string input) => Tokenize(input).SelectMany(Match).ToList();
 
             public static List<IToken> Match(Lexeme lexeme) {
+                Primitive primitive;
                 var tokens = NewList<IToken>();
+
                 if (lexeme.isExplicit)
                     tokens.Add(new VariableToken(GetStaticVariable(lexeme.original)));
                 else if (lexeme.isString)
                     tokens.Add(new AmbiguousStringToken(lexeme.original, false, GetTokens(lexeme.lexeme).ToArray()));
                 else if (PropertyWords.ContainsKey(lexeme.lexeme))
                     tokens.AddList(PropertyWords[lexeme.lexeme]);
-                else //If no property matches, must be a string
+                else if (Primitive.TryParse(lexeme.original, out primitive))
+                    tokens.Add(new VariableToken(GetStaticVariable(primitive.value)));
+                else
                     tokens.Add(new AmbiguousStringToken(lexeme.original, true));
 
                 if (tokens.Count > 0)
