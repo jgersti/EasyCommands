@@ -53,18 +53,15 @@ namespace IngameScript {
                     NoValueRule(Type<AmbiguousStringToken>,
                         p => p.subTokens.Count > 0 && p.subTokens[0] is AmbiguousToken,
                         p => p.subTokens),
-                   OneValueRule(Type<AmbiguousStringToken>, optionalRight<GroupToken>(),
-                        (p, g) => FindLast<BlockTypeToken>(p.subTokens) != null,
-                        (p, g) => new AmbiguousSelectorToken(
-                                    new BlockSelector(FindLast<BlockTypeToken>(p.subTokens).value,
-                                        (g ?? FindLast<GroupToken>(p.subTokens)) != null,
-                                        p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
-                    NoValueRule(Type<AmbiguousStringToken>,
-                        name => FunctionLookup(name.value),
-                        name => new FunctionDefinitionToken(() => name.value)),
                     NoValueRule(Type<AmbiguousStringToken>,
                         s => s.isImplicit,
                         s => new IdentifierToken(s.value)),
+                   OneValueRule(Type<AmbiguousStringToken>, optionalRight<GroupToken>(),
+                        (p, g) => FindLast<BlockTypeToken>(p.subTokens) != null,
+                        (p, g) => new AmbiguousSelectorToken(new BlockSelector(FindLast<BlockTypeToken>(p.subTokens).value, (g ?? FindLast<GroupToken>(p.subTokens)) != null, GetStaticVariable(p.value)))),
+                    NoValueRule(Type<AmbiguousStringToken>,
+                        name => FunctionLookup(name.value),
+                        name => new FunctionDefinitionToken(() => name.value)),
                     NoValueRule(Type<AmbiguousStringToken>,
                         s => new VariableToken(s.isImplicit ? new AmbiguousStringVariable(s.value) : GetStaticVariable(s.value)))),
 
@@ -291,9 +288,6 @@ namespace IngameScript {
                     (p, var) => new ConditionToken(p.inverseCondition ? new UnaryOperationVariable(UnaryOperator.REVERSE, var.value) : var.value, p.alwaysEvaluate, p.swapCommands)),
 
                 new BranchingProcessor<AmbiguousSelectorToken>(
-                    NoValueRule(Type<AmbiguousSelectorToken>,
-                        p => ((BlockSelector)p.value).selector is AmbiguousStringVariable,
-                        p => new IdentifierToken(((AmbiguousStringVariable)((BlockSelector)p.value).selector).value)),
                     NoValueRule(Type<AmbiguousSelectorToken>, p => new VariableToken(((BlockSelector)p.value).selector)),
                     NoValueRule(Type<AmbiguousSelectorToken>, p => new SelectorToken(p.value))
                 ),
