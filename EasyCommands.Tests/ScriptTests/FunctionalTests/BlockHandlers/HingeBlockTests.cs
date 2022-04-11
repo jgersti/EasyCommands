@@ -142,6 +142,26 @@ rotate the ""hinge"" clockwise by 30
             }
         }
 
+//        [TestMethod]
+//        public void increaseHingeAngle2() {
+//            String script = @"
+//tell the ""hinge"" to rotate clockwise by 30
+//";
+
+//            using (ScriptTest test = new ScriptTest(script)) {
+//                var mockHinge = new Mock<IMyMotorStator>();
+//                test.MockBlocksOfType("hinge", mockHinge);
+//                MockBlockDefinition(mockHinge, "LargeHinge");
+
+//                mockHinge.Setup(r => r.TargetVelocityRPM).Returns(1);
+//                mockHinge.Setup(r => r.Angle).Returns(0);
+//                test.RunUntilDone();
+
+//                mockHinge.VerifySet(b => b.UpperLimitDeg = 30);
+//                mockHinge.VerifySet(b => b.TargetVelocityRPM = 1);
+//            }
+//        }
+
         [TestMethod]
         public void decreaseHingeAngle() {
             String script = @"

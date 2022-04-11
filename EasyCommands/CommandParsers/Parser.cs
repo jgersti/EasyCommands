@@ -104,6 +104,8 @@ namespace IngameScript {
                     (p, left) => new ComparisonToken((a, b) => !p.value(a, b))),
                 OneValueRule(Type<ComparisonToken>, requiredRight<ComparisonToken>(),
                     (p, right) => new ComparisonToken(right.value)),
+                OneValueRule(Type<ComparisonToken>, requiredRight<AbsoluteToken>(),
+                    (p, to) => p),
 
                 //IndexSelectorProcessor
                 OneValueRule(Type<IndexSelectorToken>, requiredLeft<SelectorToken>(),
@@ -139,7 +141,8 @@ namespace IngameScript {
                     (p, v, _) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
 
                 //Primitive Processor
-                NoValueRule(Type<BooleanToken>, b => new VariableToken(GetStaticVariable(b.value))),
+                NoValueRule(Type<BooleanToken>,
+                    b => new VariableToken(GetStaticVariable(b.value))),
 
                 //ListPropertyAggregationProcessor
                 OneValueRule(Type<ListIndexToken>, requiredLeft<PropertyAggregationToken>(),
@@ -267,10 +270,10 @@ namespace IngameScript {
                     (p, var) => new RepetitionToken(var.value)),
 
                 //TransferCommandProcessor
-                FourValueRule(Type<TransferToken>, requiredLeft<SelectorToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
-                    (t, s1, s2, v1, v2) => new CommandToken(new TransferItemCommand((t.value ? s1 : s2).value, (t.value ? s2 : s1).value, v1.value, v2?.value))),
-                FourValueRule(Type<TransferToken>, requiredRight<SelectorToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
-                    (t, s1, s2, v1, v2) => new CommandToken(new TransferItemCommand(s1.value, s2.value, v1.value, v2?.value))),
+                FiveValueRule(Type<TransferToken>, requiredLeft<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
+                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand((t.value ? s1 : s2).value, (t.value ? s2 : s1).value, v1.value, v2?.value))),
+                FiveValueRule(Type<TransferToken>, requiredRight<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
+                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand(s1.value, s2.value, v1.value, v2?.value))),
 
                 //Convert Ambiguous Colon to Ternary Condition Separator
                 NoValueRule(Type<ColonSeparatorToken>, b => new TernaryConditionSeparatorToken()),
@@ -305,7 +308,7 @@ namespace IngameScript {
                     (p, name) => new VariableIncrementToken(name.value, p.value)),
 
                 //NoValueRule(Type<IteratorAssignmentToken>, p => NewList<IToken>()),
-                NoValueRule(Type<AbsoluteToken>, p => NewList<IToken>()),
+                //NoValueRule(Type<AbsoluteToken>, p => NewList<IToken>()),
 
                 //AmbiguousSelectorPropertyProcessor
                 new BranchingProcessor<SelectorToken>(
@@ -435,7 +438,7 @@ namespace IngameScript {
                         processorIndex++;
                 }
 
-                Logger?.Invoke($"out: {string.Join(" ", tokens)} {{{string.Join(",", sortedProcessors.Select(p => p.Rank))}}}");
+                //Logger?.Invoke($"out: {string.Join(" ", tokens)} {{{string.Join(",", sortedProcessors.Select(p => p.Rank))}}}");
                 Logger?.Invoke(string.Join("\n", branches.Select((b, i) => $"*{i,2:D}: {string.Join(" ", b)} ")));
 
                 return branches;

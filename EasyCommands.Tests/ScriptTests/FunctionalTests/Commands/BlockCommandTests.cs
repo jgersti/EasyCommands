@@ -37,6 +37,18 @@ namespace EasyCommands.Tests.ScriptTests {
         }
 
         [TestMethod]
+        public void ReverseWithoutProperty2() {
+            using (ScriptTest test = new ScriptTest(@"tell the ""test piston"" to reverse")) {
+                Mock<IMyPistonBase> mockPiston = new Mock<IMyPistonBase>();
+                test.MockBlocksOfType("test piston", mockPiston);
+
+                test.RunUntilDone();
+
+                mockPiston.Verify(b => b.Reverse());
+            }
+        }
+
+        [TestMethod]
         public void IncrementPropertyOnly() {
             using (ScriptTest test = new ScriptTest(@"increase the ""test beacon"" range")) {
                 Mock<IMyBeacon> mockBeacon = new Mock<IMyBeacon>();

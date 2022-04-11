@@ -336,5 +336,25 @@ print ""Hello World""
                 Assert.AreEqual("Function myFunction expects 2 parameters", test.Logger[1]);
             }
         }
+
+        [TestMethod]
+        public void CallFunctionWithDoubleQuotedName() {
+            String script = @"
+:main
+""my Function""
+print ""Done""
+
+:""my Function""
+print ""Hello World""
+";
+
+            using (var test = new ScriptTest(script)) {
+                test.RunUntilDone();
+
+                Assert.AreEqual(2, test.Logger.Count);
+                Assert.AreEqual("Hello World", test.Logger[0]);
+                Assert.AreEqual("Done", test.Logger[1]);
+            }
+        }
     }
 }

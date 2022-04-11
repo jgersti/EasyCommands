@@ -145,6 +145,7 @@ namespace IngameScript {
         // ToDo: rewrite that mess
         static RuleProcessor<SelectorToken> BlockCommandProcessor() {
             var assignmentProcessor = eitherList<AssignmentToken>(true);
+            //var assignmentProcessor = requiredEither<AssignmentToken>();
             var increaseProcessor = requiredLeft<IncreaseToken>();
             var incrementProcessor = requiredRight<IncrementToken>();
             var variableProcessor = requiredEither<VariableToken>();
@@ -153,6 +154,7 @@ namespace IngameScript {
             var reverseProcessor = requiredEither<ReverseToken>();
             var notProcessor = requiredEither<NotToken>();
             var relativeProcessor = requiredRight<RelativeToken>();
+            var absoluteProcessor = requiredEither<AbsoluteToken>();
             var processors = NewList<IMatch>(
                 assignmentProcessor,
                 increaseProcessor,
@@ -162,10 +164,102 @@ namespace IngameScript {
                 directionProcessor,
                 reverseProcessor,
                 notProcessor,
-                relativeProcessor);
+                relativeProcessor,
+                absoluteProcessor);
 
             Validate<SelectorToken> validate = p => processors.Exists(x => x.Satisfied() && x != directionProcessor && x != propertyProcessor);
             Apply<SelectorToken> apply = p => {
+                var check = NewList<IMatch>(assignmentProcessor, increaseProcessor, incrementProcessor).Select(m => m.Satisfied());
+                var count = processors.Count(x => x.Satisfied()) + (assignmentProcessor.Satisfied() ? assignmentProcessor.GetValue().Count-1 : 0);
+
+                if (check.Count(b => b) > 1)
+                    throw new Exception($".:. {string.Join(", ", check)} {assignmentProcessor.GetValue().Count}");
+
+                if (assignmentProcessor.GetValue().Count > 2)
+                    throw new Exception($".:. assignment > 2");
+
+                if (count > 5)
+                    throw new Exception($".:. matches > 5");
+
+                // --- this get triggered twice by discarded matches
+                //if (relativeProcessor.Satisfied() && !variableProcessor.Satisfied())
+                //    throw new Exception($".:. relative w/o variable");
+
+                // --- this get triggered twice by discarded matches
+                //if (incrementProcessor.Satisfied() && !variableProcessor.Satisfied())
+                //    throw new Exception($".:. increment w/o variable");
+
+                if (AllSatisfied(incrementProcessor, relativeProcessor))
+                    throw new Exception($".:. increment & relative");
+
+                if (AllSatisfied(incrementProcessor, notProcessor))
+                    throw new Exception($".:. increment & not");
+
+                if (AllSatisfied(increaseProcessor, notProcessor))
+                    throw new Exception($".:. increase & not");
+
+                if (AllSatisfied(reverseProcessor, notProcessor))
+                    throw new Exception($".:. reverse & not");
+
+                if (AllSatisfied(reverseProcessor, variableProcessor))
+                    throw new Exception($".:. reverse & variable");
+
+                if (AllSatisfied(reverseProcessor, increaseProcessor))
+                    throw new Exception($".:. reverse & increase");
+
+                if (AllSatisfied(reverseProcessor, incrementProcessor))
+                    throw new Exception($".:. reverse & increment");
+
+                if (AllSatisfied(increaseProcessor, variableProcessor) && !relativeProcessor.Satisfied())
+                    throw new Exception($".:. increase & variable w/o relative");
+
+                // -- should maybe be valid
+                if (AllSatisfied(reverseProcessor, assignmentProcessor) && assignmentProcessor.GetValue().Count == 2)
+                    throw new Exception($".:. reverse & assignmentx2");
+
+                // -- should be valid
+                //if (AllSatisfied(relativeProcessor, assignmentProcessor) && assignmentProcessor.GetValue().Count == 2)
+                //    throw new Exception($".:. relative & assignmentx2");
+
+                if (AllSatisfied(relativeProcessor, notProcessor))
+                    throw new Exception($".:. relative & not");
+
+                // -- should maybe be valid
+                if (AllSatisfied(notProcessor, assignmentProcessor) && assignmentProcessor.GetValue().Count == 2)
+                    throw new Exception($".:. not & assignmentx2");
+
+                if (AllSatisfied(incrementProcessor, absoluteProcessor))
+                    throw new Exception($".:. increment & absolute");
+
+                if (AllSatisfied(increaseProcessor, absoluteProcessor))
+                    throw new Exception($".:. increase & absolute");
+
+                // -- should maybe be valid
+                if (AllSatisfied(relativeProcessor, absoluteProcessor))
+                    throw new Exception($".:. increment & absolute");
+
+                // --- a few valid and many discarded matches
+                //if (absoluteProcessor.Satisfied() && !assignmentProcessor.Satisfied())
+                //    throw new Exception($".:. absolute w/o assignment");
+
+                if (AllSatisfied(reverseProcessor, directionProcessor))
+                    throw new Exception($".:. reverse & direction");
+
+                if (AllSatisfied(notProcessor, directionProcessor))
+                    throw new Exception($".:. not & direction");
+
+                // --- get triggered by 11 discarded matches
+                //if (count == 3 && AllSatisfied(absoluteProcessor, propertyProcessor, directionProcessor))
+                //    throw new Exception($".:. SPDA");
+
+                if (assignmentProcessor.GetValue().Count == 2 && !absoluteProcessor.Satisfied())
+                    throw new Exception($".:. assignmentx2 w/o absolute");
+
+                if (assignmentProcessor.GetValue().Count == 2 && variableProcessor.Satisfied())
+                    throw new Exception($".:. assignmentx2 with var");
+
+
+
                 PropertySupplier propertySupplier = propertyProcessor.Satisfied() ? propertyProcessor.GetValue().value : new PropertySupplier();
                 if (directionProcessor.Satisfied()) propertySupplier = propertySupplier.WithDirection(directionProcessor.GetValue().value);
 
@@ -240,6 +334,293 @@ namespace IngameScript {
                 T anchor = (T)tokens[i];
                 if (!validate(anchor)) return false;
 
+                if (matches.Count >= 9) {
+                    var count = matches.Count(x => x.Satisfied());
+
+                    // --- this get triggered once by a discarded match
+                    //if (matches[0].Satisfied() &&  !(tokens[k] is AssignmentToken))
+                    //    throw new Exception($".:. assignment not first");
+
+                    if (matches[0].Satisfied() &&  tokens[j-1] is AssignmentToken)
+                        throw new Exception($".:. assignment last");
+
+                    // --- this get triggered twice by discarded matches
+                    //if (matches[8].Satisfied() && tokens[j-1] is RelativeToken)
+                    //    throw new Exception($".:. relative last");
+
+                    if (matches[1].Satisfied() && !(tokens[k] is IncreaseToken))
+                        throw new Exception($".:. increase not first");
+
+                    Func<Func<IToken, bool>, int> FirstIndex = pred => tokens.FindIndex(k, j-k, t => pred(t));
+                    Func<Func<IToken, bool>, int> LastIndex = pred => tokens.FindLastIndex(j-1, j-k, t => pred(t));
+
+                    if (AllSatisfied(matches[3], matches[8])) {
+                        var r = FirstIndex(t => t is RelativeToken);
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (r > v)
+                            throw new Exception($".:. variable {v} before relative {r}");
+                    }
+
+                    if (AllSatisfied(matches[4], matches[8])) {
+                        var r = FirstIndex(t => t is RelativeToken);
+                        var p = FirstIndex(t => t is PropertySupplierToken);
+                        if (p > r)
+                            throw new Exception($".:. relative {r} before property {p}");
+                    }
+
+                    if (AllSatisfied(matches[5], matches[8])) {
+                        var r = FirstIndex(t => t is RelativeToken);
+                        var d = FirstIndex(t => t is DirectionToken);
+                        if (d > r)
+                            throw new Exception($".:. relative {r} before direction {d}");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[2])) {
+                        var r = FirstIndex(t => t is IncrementToken);
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (r > v)
+                            throw new Exception($".:. variable {v} before increment {r}");
+                    }
+
+                    if (AllSatisfied(matches[4], matches[2])) {
+                        var r = FirstIndex(t => t is IncrementToken);
+                        var p = FirstIndex(t => t is PropertySupplierToken);
+                        if (p > r)
+                            throw new Exception($".:. increment {r} before property {p}");
+                    }
+
+                    if (AllSatisfied(matches[5], matches[2])) {
+                        var r = FirstIndex(t => t is IncrementToken);
+                        var d = FirstIndex(t => t is DirectionToken);
+                        if (d > r)
+                            throw new Exception($".:. increment {r} before direction {d}");
+                    }
+
+                    if (AllSatisfied(matches[6])) {
+                        var r = FirstIndex(t => t is ReverseToken);
+                        if (r < i && r != k)
+                            throw new Exception($".:. reverse not first when left of selector");
+                        // --- maybe
+                        if (r > i && r != j - 1)
+                            throw new Exception($".:. reverse not last when right of selector");
+                    }
+
+                    if (AllSatisfied(matches[0]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 1) {
+                        var r = FirstIndex(t => t is AssignmentToken);
+                        if (r > i)
+                            throw new Exception($".:. single assignment after selector");
+                    }
+
+                    if (AllSatisfied(matches[0], matches[8]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 2) {
+                        //var a1 = FirstIndex(t => t is AssignmentToken);
+                        var a2 = LastIndex(t => t is AssignmentToken);
+                        var r = FirstIndex(t => t is RelativeToken);
+                        if (r < a2)
+                            throw new Exception($".:. relative before second assignment");
+                    }
+
+                    if (AllSatisfied(matches[0]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 1) {
+                        var r = FirstIndex(t => t is AssignmentToken);
+                        if (r > i)
+                            throw new Exception($".:. single assignment after selector");
+                    }
+
+                    if (AllSatisfied(matches[7])) {
+                        var n = FirstIndex(t => t is NotToken);
+                        if (n < i && n != k)
+                            throw new Exception($".:. 'not' not first when left of selector");
+                    }
+
+                    if (AllSatisfied(matches[7]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 0) {
+                        var n = FirstIndex(t => t is NotToken);
+                        if (n > i)
+                            throw new Exception($".:. 'not' w/o assignment after selector");
+                    }
+
+                    if (AllSatisfied(matches[6]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 0) {
+                        var n = FirstIndex(t => t is ReverseToken);
+                        if (n > i)
+                            throw new Exception($".:. reverse w/o assignment after selector");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[7])) {
+                        var n = FirstIndex(t => t is NotToken);
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (n > v)
+                            throw new Exception($".:. variable {v} before not {n}");
+                    }
+
+                    if (AllSatisfied(matches[3])) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        // --- this get triggered by discarded matches for transfer commands
+                        //if (v < i && !((tokens[v] as VariableToken).value is StaticVariable))
+                        //    throw new Exception($".:. variable {v} before selector is not static\n{string.Join(" ", tokens)} {k}:{j}");
+
+                        // --- this get triggered by discarded matches for transfer commands
+                        //if (v < i && !((tokens[v] as VariableToken).value.GetValue().returnType == Return.BOOLEAN))
+                        //    throw new Exception($".:. variable {v} before selector last is not bool\n{string.Join(" ", tokens)} {k}:{j}");
+
+                        // --- counter: turn on xxx
+                        //if (v < i && !((tokens[v] as VariableToken).value.GetValue().AsBool() == false))
+                        //    throw new Exception($".:. variable {v} before selector last is not false\n{string.Join(" ", tokens)} {k}:{j}");
+                    }
+
+                    //if (AllSatisfied(matches[4], matches[5]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count != 2) {
+                    //    var p = FirstIndex(t => t is PropertySupplierToken);
+                    //    var d = FirstIndex(t => t is DirectionToken);
+                    //    if (p < i && d < i && i - Math.Min(p,d) > 2)
+                    //        throw new Exception($".:. SPD {i} {p} {d}");
+                    //    if (p > i && d > i && Math.Max(p, d) - i > 2)
+                    //        throw new Exception($".:. SPD {i} {p} {d}");
+                    //}
+
+                    // --- this get triggered by discarded matches for variable assignments, etc
+                    //if (AllSatisfied(matches[9])) {
+                    //    var a = FirstIndex(t => t is AbsoluteToken);
+                    //    if (a == k || a == j-1)
+                    //        throw new Exception($".:. absolute first or last");
+                    //}
+
+                    if (AllSatisfied(matches[0], matches[8]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 2) {
+                        //var a1 = FirstIndex(t => t is AssignmentToken);
+                        var a2 = LastIndex(t => t is AssignmentToken);
+                        var r = FirstIndex(t => t is AbsoluteToken);
+                        if (r > a2)
+                            throw new Exception($".:. absolute after second assignment");
+                    }
+
+                    if (AllSatisfied(matches[7], matches[9])) {
+                        var n = FirstIndex(t => t is NotToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (n > i && Math.Abs(n-a) > 1)
+                            throw new Exception($".:. 'not' right of selector far from to");
+                        if (n < i)
+                            throw new Exception($".:. not left of selector with absolute");
+                    }
+
+                    if (AllSatisfied(matches[6], matches[9])) {
+                        var n = FirstIndex(t => t is ReverseToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (n > i && a > n)
+                            throw new Exception($".:. reverse right of selector before to");
+                        if (n < i)
+                            throw new Exception($".:. reverse left of selector with absolute");
+                        if (n > i && Math.Abs(n - a) > 1)
+                            throw new Exception($".:. reverse right of selector far from to");
+                    }
+
+                    if (AllSatisfied(matches[0], matches[9]) && (matches[0] as ListMatch<AssignmentToken>).GetValue().Count == 1) {
+                        var a = FirstIndex(t => t is AssignmentToken);
+                        var r = FirstIndex(t => t is AbsoluteToken);
+                        if (r < a)
+                            throw new Exception($".:. absolute before single assignment");
+                        if (r == a+1)
+                            throw new Exception($".:. absolute directly after single assignment");
+                        // reformulate
+                        //if (r < i)
+                        //    throw new Exception($".:. absolute before selector (single assignment)");
+                    }
+
+                    if (AllSatisfied(matches[6]) && !matches[9].Satisfied()) {
+                        var n = FirstIndex(t => t is ReverseToken);
+                        if (n > i)
+                            throw new Exception($".:. reverse right of selector without to");
+                    }
+
+                    if (AllSatisfied(matches[6], matches[4])) {
+                        var n = FirstIndex(t => t is ReverseToken);
+                        var p = FirstIndex(t => t is PropertySupplierToken);
+                        if (n > i && n < p)
+                            throw new Exception($".:. reverse after selector left of propery");
+                    }
+
+                    if (AllSatisfied(matches[6], matches[5])) {
+                        var n = FirstIndex(t => t is ReverseToken);
+                        var d = FirstIndex(t => t is DirectionToken);
+                        if (n > i && n < d)
+                            throw new Exception($".:. reverse after selector left of direction");
+                    }
+
+                    if (AllSatisfied(matches[7], matches[3])) {
+                        var r = FirstIndex(t => t is NotToken);
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (r < i)
+                            throw new Exception($".:. 'not' left of selector with var");
+                    }
+
+                    // --- not valid
+                    //if (AllSatisfied(matches[7], matches[4])) {
+                    //    var n = FirstIndex(t => t is NotToken);
+                    //    var p = FirstIndex(t => t is PropertySupplierToken);
+                    //    if (n > i && n < p)
+                    //        throw new Exception($".:. 'not' after selector left of propery");
+                    //}
+
+                    if (AllSatisfied(matches[7], matches[5])) {
+                        var n = FirstIndex(t => t is NotToken);
+                        var d = FirstIndex(t => t is DirectionToken);
+                        if (n > i && n < d)
+                            throw new Exception($".:. 'not' after selector left of direction");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[4], matches[5], matches[9]) && NoneSatisfied(matches[0], matches[1], matches[2], matches[6], matches[7], matches[8])) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        var p = FirstIndex(t => t is PropertySupplierToken);
+                        var d = FirstIndex(t => t is DirectionToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (v < a && a < i && a < p && a < d)
+                            throw new Exception($".:. VA SPD");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[4], matches[9]) && NoneSatisfied(matches[0], matches[1], matches[2], matches[5], matches[6], matches[7], matches[8])) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        var p = FirstIndex(t => t is PropertySupplierToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (v < a && a < i && a < p)
+                            throw new Exception($".:. VA SP");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[5], matches[9]) && NoneSatisfied(matches[0], matches[1], matches[2], matches[4], matches[6], matches[7], matches[8])) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        var p = FirstIndex(t => t is DirectionToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (v < a && a < i && a < p)
+                            throw new Exception($".:. VA SD");
+                    }
+
+                    if (AllSatisfied(matches[3], matches[9]) && NoneSatisfied(matches[0], matches[1], matches[2], matches[4], matches[5], matches[6], matches[7], matches[8])) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        if (v < a && a < i)
+                            throw new Exception($".:. VA S");
+                    }
+
+                    if (AllSatisfied(matches[9], matches[3])) {
+                        var a = FirstIndex(t => t is AbsoluteToken);
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (v > i && a > v)
+                            throw new Exception($".:. var between selector and absolute");
+                    }
+
+                    if (AllSatisfied(matches[3]) && count == 1) {
+                        var v = FirstIndex(t => t is VariableToken);
+                        if (i < v)
+                            throw new Exception($".:. SV");
+                    }
+
+                    // --- to start collecting -> abs var prop var
+                    //if (AllSatisfied(matches[3], matches[4]) ) {
+                    //    var v = FirstIndex(t => t is VariableToken);
+                    //    var p = FirstIndex(t => t is PropertySupplierToken);
+                    //    if (i < v && v < p)
+                    //        throw new Exception($".:. S ... V ... P");
+                    //}
+
+                    // --- increment needs an exception otherwise this should not be valid
+                    //if (i == k)
+                    //    throw new Exception(".:. selector first"); ;
+                }
+
                 var product = apply(anchor);
                 result = product as List<IToken> ?? (product is IToken ? NewList((IToken)product) : null);
                 if (result == null) throw new Exception("Result must be a Token");
@@ -275,17 +656,24 @@ namespace IngameScript {
         static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueValidate<T, U, V, W, X> validate, FourValueApply<T, U, V, W, X> apply) where T : class, IToken =>
             new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => validate(p, u, v, w, x), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
 
+        static RuleProcessor<T> FiveValueRule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, FiveValueApply<T, U, V, W, X, Y> apply) where T : class, IToken =>
+            FiveValueRule(type, u, v, w, x, y, (p, a, b, c, d, e) => AllSatisfied(a, b, c, d, e), apply);
+        static RuleProcessor<T> FiveValueRule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, FiveValueValidate<T, U, V, W, X, Y> validate, FiveValueApply<T, U, V, W, X, Y> apply) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x, y), p => validate(p, u, v, w, x, y), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue(), y.GetValue()));
+
         //Utility delegates to efficiently create Rule Processors
         public delegate bool Validate<T>(T t);
         delegate bool OneValueValidate<T, U>(T t, Match<U> a);
         delegate bool TwoValueValidate<T, U, V>(T t, Match<U> a, Match<V> b);
         delegate bool ThreeValueValidate<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
         delegate bool FourValueValidate<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
+        delegate bool FiveValueValidate<T, U, V, W, X, Y>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d, Match<Y> e);
 
         public delegate object Apply<T>(T t);
         delegate object OneValueApply<T, U>(T t, U a);
         delegate object TwoValueApply<T, U, V>(T t, U a, V b);
         delegate object ThreeValueApply<T, U, V, W>(T t, U a, V b, W c);
         delegate object FourValueApply<T, U, V, W, X>(T t, U a, V b, W c, X d);
+        delegate object FiveValueApply<T, U, V, W, X, Y>(T t, U a, V b, W c, X d, Y e);
     }
 }

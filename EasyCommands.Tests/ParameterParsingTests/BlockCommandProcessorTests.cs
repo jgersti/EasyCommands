@@ -103,6 +103,7 @@ namespace EasyCommands.Tests.ParameterParsingTests {
             Assert.IsTrue(command is BlockCommand);
         }
 
+        // ToDo: this parse is dubious and should not do what is intended
         [TestMethod]
         public void SimpleBlockCommandUsingImplicitBlockPropertyValue() {
             var program = MDKFactory.CreateProgram<Program>();

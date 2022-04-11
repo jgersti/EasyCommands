@@ -404,6 +404,24 @@ reverse the ""rotor"" angle
             }
         }
 
+//        [TestMethod]
+//        public void reverseTheRotorAngle2() {
+//            String script = @"
+//tell the ""rotor"" to reverse the angle
+//";
+
+//            using (ScriptTest test = new ScriptTest(script)) {
+//                var mockRotor = new Mock<IMyMotorStator>();
+//                test.MockBlocksOfType("rotor", mockRotor);
+//                MockBlockDefinition(mockRotor, "LargeStator");
+
+//                mockRotor.Setup(r => r.TargetVelocityRPM).Returns(-1);
+//                test.RunUntilDone();
+
+//                mockRotor.VerifySet(b => b.TargetVelocityRPM = 1);
+//            }
+//        }
+
         [TestMethod]
         public void reverseTheRotorVelocity() {
             String script = @"

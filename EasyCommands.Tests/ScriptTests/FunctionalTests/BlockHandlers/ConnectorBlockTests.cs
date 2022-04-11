@@ -54,6 +54,30 @@ namespace EasyCommands.Tests.ScriptTests {
             }
         }
 
+        //[TestMethod]
+        //public void TellTheConnectorToStartCollecting() {
+        //    using (ScriptTest test = new ScriptTest(@"tell the ""test connector"" to start collecting")) {
+        //        Mock<IMyShipConnector> mockConnector = new Mock<IMyShipConnector>();
+        //        test.MockBlocksOfType("test connector", mockConnector);
+
+        //        test.RunUntilDone();
+
+        //        mockConnector.VerifySet(b => b.CollectAll = true);
+        //    }
+        //}
+
+        [TestMethod]
+        public void TellTheConnectorToStartDraining() {
+            using (ScriptTest test = new ScriptTest(@"tell the ""test connector"" to start draining")) {
+                Mock<IMyShipConnector> mockConnector = new Mock<IMyShipConnector>();
+                test.MockBlocksOfType("test connector", mockConnector);
+
+                test.RunUntilDone();
+
+                mockConnector.VerifySet(b => b.ThrowOut = true);
+            }
+        }
+
         [TestMethod]
         public void SetTheConnectorStrength() {
             using (ScriptTest test = new ScriptTest(@"set the ""test connector"" strength to 0.2")) {

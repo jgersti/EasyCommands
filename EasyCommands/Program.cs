@@ -126,7 +126,7 @@ namespace IngameScript {
                     Runtime.UpdateFrequency = updateFrequency;
                     return;
                 }
-            } catch (Exception e) {
+            } catch (Exception e) when (!e.Message.Contains(".:.")) {
                 Print("Exception Occurred During Parsing:");
                 Print(e.Message);
                 Runtime.UpdateFrequency = UpdateFrequency.None;
