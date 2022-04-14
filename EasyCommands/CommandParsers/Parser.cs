@@ -38,61 +38,70 @@ namespace IngameScript {
                 //        return new ListToken(GetStaticVariable(indices));
                 //        }),
 
+                Rule(Type<BlockTypeToken>, optionalEither<GroupToken>(),
+                    (b, g) => new BlockGroupToken(b.value, g != null)),
+
                 //SelectorVariableSelectorProcessor
-                ThreeValueRule(Type<VariableSelectorToken>, requiredRight<AmbiguousStringToken>(), optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, selector, blockType, group) => new SelectorToken(new BlockSelector(blockType?.value, group != null, new AmbiguousStringVariable(selector.value)))),
-                ThreeValueRule(Type<VariableSelectorToken>, requiredRight<VariableToken>(), optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, selector, blockType, group) => new SelectorToken(new BlockSelector(blockType?.value, group != null, selector.value))),
+                Rule(Type<VariableSelectorToken>, requiredRight<AmbiguousStringToken>(), requiredRight<BlockGroupToken>(),
+                    (p, s, bg) => new SelectorToken(new BlockSelector(bg.value, bg.group, new AmbiguousStringVariable(s.value)))),
+                Rule(Type<VariableSelectorToken>, requiredRight<AmbiguousStringToken>(), optionalRight<GroupToken>(),
+                    (p, s, g) => new SelectorToken(new BlockSelector(null, g != null, new AmbiguousStringVariable(s.value)))),
+                Rule(Type<VariableSelectorToken>, requiredRight<VariableToken>(), requiredRight<BlockGroupToken>(),
+                    (p, v, bg) => new SelectorToken(new BlockSelector(bg.value, bg.group, v.value))),
+                Rule(Type<VariableSelectorToken>, requiredRight<VariableToken>(), optionalRight<GroupToken>(),
+                    (p, v, g) => new SelectorToken(new BlockSelector(null, g != null, v.value))),
 
                 //SelectorProcessor
-                TwoValueRule(Type<AmbiguousStringToken>, requiredRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, b, g) => new SelectorToken(new BlockSelector(b.value, g != null, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
+                Rule(Type<AmbiguousStringToken>, requiredRight<BlockGroupToken>(),
+                    (p, bg) => new SelectorToken(new BlockSelector(bg.value, bg.group, p.isImplicit ? new AmbiguousStringVariable(p.value) : GetStaticVariable(p.value)))),
 
                 //AmbiguousStringProcessor
                 new BranchingProcessor<AmbiguousStringToken>(
-                    NoValueRule(Type<AmbiguousStringToken>,
+                    Rule(Type<AmbiguousStringToken>,
                         p => p.subTokens.Count > 0 && p.subTokens[0] is AmbiguousToken,
                         p => p.subTokens),
-                    NoValueRule(Type<AmbiguousStringToken>,
+                    Rule(Type<AmbiguousStringToken>,
                         s => s.isImplicit,
                         s => new IdentifierToken(s.value)),
-                   OneValueRule(Type<AmbiguousStringToken>, optionalRight<GroupToken>(),
+                   Rule(Type<AmbiguousStringToken>, optionalRight<GroupToken>(),
                         (p, g) => FindLast<BlockTypeToken>(p.subTokens) != null,
                         (p, g) => new AmbiguousSelectorToken(new BlockSelector(FindLast<BlockTypeToken>(p.subTokens).value, (g ?? FindLast<GroupToken>(p.subTokens)) != null, GetStaticVariable(p.value)))),
-                    NoValueRule(Type<AmbiguousStringToken>,
+                    Rule(Type<AmbiguousStringToken>,
                         name => FunctionLookup(name.value),
                         name => new FunctionDefinitionToken(() => name.value)),
-                    NoValueRule(Type<AmbiguousStringToken>,
+                    Rule(Type<AmbiguousStringToken>,
                         s => new VariableToken(s.isImplicit ? new AmbiguousStringVariable(s.value) : GetStaticVariable(s.value)))),
 
-                NoValueRule(Type<AmbiguousToken>, p => p.alternatives.Count > 0, p => p.alternatives),
+                Rule(Type<AmbiguousToken>, p => p.alternatives.Count > 0, p => p.alternatives),
 
-                OneValueRule(Type<ListIndexToken>, requiredRight<ListToken>(),
+                Rule(Type<ListIndexToken>, requiredRight<ListToken>(),
                     (index, list) => new ListIndexToken(new ListIndexVariable(index.value, list.value))),
 
-                OneValueRule(Type<ListToken>, requiredLeft<IdentifierToken>(),
+                Rule(Type<ListToken>, requiredLeft<IdentifierToken>(),
                     (list, variable) => new ListIndexToken(new ListIndexVariable(new AmbiguousStringVariable(variable.value), list.value))),
-                OneValueRule(Type<ListToken>, requiredLeft<VariableToken>(),
+                Rule(Type<ListToken>, requiredLeft<VariableToken>(),
                     (list, variable) => new ListIndexToken(new ListIndexVariable(variable.value, list.value))),
 
                 //SelfSelectorProcessor
-                TwoValueRule(Type<Selftoken>, optionalRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, blockType, group) => new SelectorToken(new SelfSelector(blockType?.value))),
+                Rule(Type<Selftoken>, requiredRight<BlockGroupToken>(),
+                    (p, bg) => new SelectorToken(new SelfSelector(bg.value))),
+                Rule(Type<Selftoken>, optionalRight<GroupToken>(),
+                    (p, g) => new SelectorToken(new SelfSelector(null))),
 
                 //VariableSelectorProcessor
-                TwoValueRule(Type<VariableToken>, requiredRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, blockType, group) => new SelectorToken(new BlockSelector(blockType.value, group != null, p.value))),
+                Rule(Type<VariableToken>, requiredRight<BlockGroupToken>(),
+                    (p, bg) => new SelectorToken(new BlockSelector(bg.value, bg.group, p.value))),
 
                 //ListSelectorProcessor
-                TwoValueRule(Type<ListIndexToken>, requiredRight<BlockTypeToken>(), optionalRight<GroupToken>(),
-                    (p, blockType, group) => new SelectorToken(new BlockSelector(blockType.value, group != null, p.value))),
+                Rule(Type<ListIndexToken>, requiredRight<BlockGroupToken>(),
+                    (p, bg) => new SelectorToken(new BlockSelector(bg.value, bg.group, p.value))),
 
                 //ImplicitAllSelectorProcessor
-                OneValueRule(Type<BlockTypeToken>, optionalRight<GroupToken>(),
-                    (blockType, group) => new SelectorToken(new BlockTypeSelector(blockType.value))),
+                Rule(Type<BlockGroupToken>,
+                    (b) => new SelectorToken(new BlockTypeSelector(b.value))),
 
                 //IndexProcessor
-                OneValueRule(Type<IndexToken>, requiredRight<VariableToken>(),
+                Rule(Type<IndexToken>, requiredRight<VariableToken>(),
                     (p, var) => new IndexSelectorToken(var.value)),
 
                 //RedundantComparisonProcessor
@@ -100,19 +109,19 @@ namespace IngameScript {
                 //"is <" => "<"
                 //"is not" => !=
                 // "not greater than" => <
-                OneValueRule(Type<ComparisonToken>, requiredEither<NotToken>(),
+                Rule(Type<ComparisonToken>, requiredEither<NotToken>(),
                     (p, left) => new ComparisonToken((a, b) => !p.value(a, b))),
-                OneValueRule(Type<ComparisonToken>, requiredRight<ComparisonToken>(),
+                Rule(Type<ComparisonToken>, requiredRight<ComparisonToken>(),
                     (p, right) => new ComparisonToken(right.value)),
-                OneValueRule(Type<ComparisonToken>, requiredRight<AbsoluteToken>(),
+                Rule(Type<ComparisonToken>, requiredRight<AbsoluteToken>(),
                     (p, to) => p),
 
                 //IndexSelectorProcessor
-                OneValueRule(Type<IndexSelectorToken>, requiredLeft<SelectorToken>(),
+                Rule(Type<IndexSelectorToken>, requiredLeft<SelectorToken>(),
                     (p, selector) => new SelectorToken(new IndexSelector(selector.value, p.value))),
 
                 //ListProcessors
-                OneValueRule(Type<ListToken>, requiredLeft<SelectorToken>(),
+                Rule(Type<ListToken>, requiredLeft<SelectorToken>(),
                     (list, selector) => new SelectorToken(new IndexSelector(selector.value, new IndexVariable(list.value)))),
 
                 new MultiListProcessor(),
@@ -127,67 +136,67 @@ namespace IngameScript {
                 //    }),
 
                 //FunctionProcessor
-                OneValueRule(Type<VariableToken>, requiredLeft<FunctionToken>(),
+                Rule(Type<VariableToken>, requiredLeft<FunctionToken>(),
                     (name, function) => new FunctionDefinitionToken(() => name.value.GetValue().AsString(), function.value)),
 
                 //PropertyProcessor
-                NoValueRule(Type<PropertyToken>, p => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme))),
+                Rule(Type<PropertyToken>, p => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme))),
 
                 //ValuePropertyProcessor
                 //Needs to check left, then right, which is opposite the typical checks.
-                TwoValueRule(Type<ValuePropertyToken>, requiredLeft<VariableToken>(), optionalRight<InToken>(),
+                Rule(Type<ValuePropertyToken>, requiredLeft<VariableToken>(), optionalRight<InToken>(),
                     (p, v, _) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
-                TwoValueRule(Type<ValuePropertyToken>, requiredRight<VariableToken>(), optionalRight<InToken>(),
+                Rule(Type<ValuePropertyToken>, requiredRight<VariableToken>(), optionalRight<InToken>(),
                     (p, v, _) => new PropertySupplierToken(new PropertySupplier(p.value + "", p.Lexeme).WithAttributeValue(v.value))),
 
                 //Primitive Processor
-                NoValueRule(Type<BooleanToken>,
+                Rule(Type<BooleanToken>,
                     b => new VariableToken(GetStaticVariable(b.value))),
 
                 //ListPropertyAggregationProcessor
-                OneValueRule(Type<ListIndexToken>, requiredLeft<PropertyAggregationToken>(),
+                Rule(Type<ListIndexToken>, requiredLeft<PropertyAggregationToken>(),
                     (list, aggregation) => new VariableToken(new ListAggregateVariable(list.value, aggregation.value))),
 
                 //ListComparisonProcessor
-                ThreeValueRule(Type<ListIndexToken>, requiredRight<ComparisonToken>(), requiredRight<VariableToken>(), optionalLeft<AggregationModeToken>(),
+                Rule(Type<ListIndexToken>, requiredRight<ComparisonToken>(), requiredRight<VariableToken>(), optionalLeft<AggregationModeToken>(),
                     (list, comparison, value, aggregation) => new VariableToken(new ListAggregateConditionVariable(aggregation?.value ?? AggregationMode.ALL, list.value, comparison.value, value.value))),
 
-                OneValueRule(Type<ListIndexToken>, requiredLeft<AssignmentToken>(),
+                Rule(Type<ListIndexToken>, requiredLeft<AssignmentToken>(),
                     (index, assignment) => new ListIndexAssignmentToken(index.value, assignment.value)),
 
                 //ListIndexAsVariableProcessor
-                NoValueRule(Type<ListIndexToken>, list => new VariableToken(list.value)),
+                Rule(Type<ListIndexToken>, list => new VariableToken(list.value)),
 
                 //MinusProcessor
                 new BranchingProcessor<MinusToken>(
-                    NoValueRule(Type<MinusToken>, minus => new UnaryOperationToken(UnaryOperator.REVERSE)),
-                    NoValueRule(Type<MinusToken>, minus => new BinaryOperandToken(BinaryOperator.SUBTRACT, 3))
+                    Rule(Type<MinusToken>, minus => new UnaryOperationToken(UnaryOperator.REVERSE)),
+                    Rule(Type<MinusToken>, minus => new BinaryOperandToken(BinaryOperator.SUBTRACT, 3))
                 ),
 
                 //RoundProcessor
                 new BranchingProcessor<RoundToken>(
-                    OneValueRule(Type<RoundToken>, optionalRight<AbsoluteToken>(), (round, _) => new BinaryOperandToken(BinaryOperator.ROUND, 1)),
-                    NoValueRule(Type<RoundToken>, round => new LeftUnaryOperationToken(UnaryOperator.ROUND)),
-                    NoValueRule(Type<RoundToken>, round => new UnaryOperationToken(UnaryOperator.ROUND))
+                    Rule(Type<RoundToken>, optionalRight<AbsoluteToken>(), (round, _) => new BinaryOperandToken(BinaryOperator.ROUND, 1)),
+                    Rule(Type<RoundToken>, round => new LeftUnaryOperationToken(UnaryOperator.ROUND)),
+                    Rule(Type<RoundToken>, round => new UnaryOperationToken(UnaryOperator.ROUND))
                 ),
 
                 //CastProcessor
                 new BranchingProcessor<CastToken>(
-                    NoValueRule(Type<CastToken>, round => new BinaryOperandToken(BinaryOperator.CAST, 4)),
-                    NoValueRule(Type<CastToken>, round => new LeftUnaryOperationToken(UnaryOperator.CAST)),
-                    NoValueRule(Type<CastToken>, round => new UnaryOperationToken(UnaryOperator.CAST))
+                    Rule(Type<CastToken>, round => new BinaryOperandToken(BinaryOperator.CAST, 4)),
+                    Rule(Type<CastToken>, round => new LeftUnaryOperationToken(UnaryOperator.CAST)),
+                    Rule(Type<CastToken>, round => new UnaryOperationToken(UnaryOperator.CAST))
                 ),
 
                 //AfterUniOperationProcessor
-                OneValueRule(Type<LeftUnaryOperationToken>, requiredLeft<VariableToken>(),
+                Rule(Type<LeftUnaryOperationToken>, requiredLeft<VariableToken>(),
                     (p, df) => new VariableToken(new UnaryOperationVariable(p.value, df.value))),
 
                 //UniOperationProcessor
-                OneValueRule(Type<UnaryOperationToken>, requiredRight<VariableToken>(),
+                Rule(Type<UnaryOperationToken>, requiredRight<VariableToken>(),
                     (p, df) => new VariableToken(new UnaryOperationVariable(p.value, df.value))),
 
                 //VectorProcessor
-                FourValueRule(Type<ColonSeparatorToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(), requiredRight<ColonSeparatorToken>(), requiredRight<VariableToken>(),
+                Rule(Type<ColonSeparatorToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(), requiredRight<ColonSeparatorToken>(), requiredRight<VariableToken>(),
                     (sep1, x, y, sep2, z) => AllSatisfied(x, y, z) && !(x.GetValue().value is VectorVariable || y.GetValue().value is VectorVariable || z.GetValue().value is VectorVariable),
                     (sep1, x, y, sep2, z) => new VariableToken(new VectorVariable { X = x.value, Y = y.value, Z = z.value })),
 
@@ -204,82 +213,88 @@ namespace IngameScript {
                 BiOperandProcessor(3),
 
                 //VariableComparisonProcessor
-                TwoValueRule(Type<ComparisonToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
+                Rule(Type<ComparisonToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                     (p, left, right) => new VariableToken(new ComparisonVariable(left.value, right.value, p.value))),
 
                 //NotProcessor
-                OneValueRule(Type<NotToken>, requiredRight<VariableToken>(),
+                Rule(Type<NotToken>, requiredRight<VariableToken>(),
                     (p, right) => new VariableToken(new UnaryOperationVariable(UnaryOperator.REVERSE, right.value))),
 
                 //ReverseProcessor
-                OneValueRule(Type<ReverseToken>, requiredRight<VariableToken>(),
+                Rule(Type<ReverseToken>, requiredRight<VariableToken>(),
                     (p, right) => new VariableToken(new UnaryOperationVariable(UnaryOperator.REVERSE, right.value))),
 
                 //AndProcessor
-                TwoValueRule(Type<AndToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
+                Rule(Type<AndToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                     (p, left, right) => new VariableToken(new BinaryOperationVariable(BinaryOperator.AND, left.value, right.value))),
 
                 //OrProcessor
-                TwoValueRule(Type<OrToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
+                Rule(Type<OrToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                     (p, left, right) => new VariableToken(new BinaryOperationVariable(BinaryOperator.OR, left.value, right.value))),
 
                 //Tier4OperationProcessor
                 BiOperandProcessor(4),
 
                 //KeyedVariableProcessor
-                TwoValueRule(Type<KeyedVariableToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
+                Rule(Type<KeyedVariableToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                     (keyed, left, right) => new VariableToken(new KeyedVariable(left.value, right.value))),
 
                 //OneValueRule(Type<ListSeparatorToken>, requiredLeft<ValueToken<IVariable>>(), (s, var) => new ListXXXToken(var.value)),
 
                 //BlockConditionProcessors
-                ThreeValueRule(Type<AndToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
+                Rule(Type<AndToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
                     (p, left, with, right) => new BlockConditionToken(AndCondition(left.value, right.value))),
-                ThreeValueRule(Type<OrToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
+                Rule(Type<OrToken>, requiredLeft<BlockConditionToken>(), optionalRight<ThatToken>(), requiredRight<BlockConditionToken>(),
                     (p, left, with, right) => new BlockConditionToken(OrCondition(left.value, right.value))),
 
                 //ThatBlockConditionProcessor
-                FourValueRule(Type<ThatToken>, requiredRight<ComparisonToken>(), optionalRight<PropertySupplierToken>(), optionalRight<DirectionToken>(), optionalRight<VariableToken>(),
+                Rule(Type<ThatToken>, requiredRight<ComparisonToken>(), optionalRight<PropertySupplierToken>(), optionalRight<DirectionToken>(), optionalRight<VariableToken>(),
                     (with, p, prop, dir, var) => p.Satisfied() && AnyNotNull(var.GetValue(), prop.GetValue()),
-                    (with, p, prop, dir, var) => NewList<IToken>(new ThatToken(), new BlockConditionToken(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true))))),
+                    (with, p, prop, dir, var) => NewList<IToken>(new ThatToken(), new BlockConditionToken(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true)))),
+                    true),
 
                 //ConditionalSelectorProcessor
-                TwoValueRule(Type<ThatToken>, requiredLeft<SelectorToken>(), requiredRight<BlockConditionToken>(),
+                Rule(Type<ThatToken>, requiredLeft<SelectorToken>(), requiredRight<BlockConditionToken>(),
                     (p, selector, condition) => new SelectorToken(new ConditionalSelector(selector.value, condition.value))),
 
                 //PropertyAggregationProcessor
-                ThreeValueRule(Type<PropertyAggregationToken>, requiredEither<SelectorToken>(), optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
-                    (p, selector, prop, dir) => new VariableToken(new AggregatePropertyVariable(p.value, selector.value, (prop?.value ?? new PropertySupplier()).WithDirection(dir?.value)))),
+                Rule(Type<PropertyAggregationToken>, requiredEither<SelectorToken>(), optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
+                    (p, selector, prop, dir) => new VariableToken(new AggregatePropertyVariable(p.value, selector.value, (prop?.value ?? new PropertySupplier()).WithDirection(dir?.value))),
+                    true),
 
                 //BlockComparisonProcessor
-                ThreeValueRule(Type<ComparisonToken>, optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(), optionalRight<VariableToken>(),
+                Rule(Type<ComparisonToken>, optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(), optionalRight<VariableToken>(),
                     (p, prop, dir, var) => AnyNotNull(var.GetValue(), prop.GetValue()),
-                    (p, prop, dir, var) => new BlockConditionToken(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true)))),
+                    (p, prop, dir, var) => new BlockConditionToken(BlockPropertyCondition((prop?.value ?? new PropertySupplier()).WithDirection(dir?.value), new PrimitiveComparator(p.value), var?.value ?? GetStaticVariable(true))),
+                    true),
 
                 //AggregateConditionProcessor
-                TwoValueRule(Type<BlockConditionToken>, optionalLeft<AggregationModeToken>(), requiredLeft<SelectorToken>(),
-                    (p, aggregation, selector) => new VariableToken(new AggregateConditionVariable(aggregation?.value ?? AggregationMode.ALL, p.value, selector.value))),
+                Rule(Type<BlockConditionToken>, optionalLeft<AggregationModeToken>(), requiredLeft<SelectorToken>(),
+                    (p, aggregation, selector) => new VariableToken(new AggregateConditionVariable(aggregation?.value ?? AggregationMode.ALL, p.value, selector.value)),
+                    true),
 
                 //AggregateSelectorProcessor
-                OneValueRule(Type<AggregationModeToken>, requiredRight<SelectorToken>(),
+                Rule(Type<AggregationModeToken>, requiredRight<SelectorToken>(),
                     (aggregation, selector) => aggregation.value != AggregationMode.NONE && selector.Satisfied(),
                     (aggregation, selector) => selector),
 
                 //RepetitionProcessor
-                OneValueRule(Type<RepeatToken>, requiredLeft<VariableToken>(),
+                Rule(Type<RepeatToken>, requiredLeft<VariableToken>(),
                     (p, var) => new RepetitionToken(var.value)),
 
                 //TransferCommandProcessor
-                FiveValueRule(Type<TransferToken>, requiredLeft<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
-                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand((t.value ? s1 : s2).value, (t.value ? s2 : s1).value, v1.value, v2?.value))),
-                FiveValueRule(Type<TransferToken>, requiredRight<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
-                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand(s1.value, s2.value, v1.value, v2?.value))),
+                Rule(Type<TransferToken>, requiredLeft<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
+                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand((t.value ? s1 : s2).value, (t.value ? s2 : s1).value, v1.value, v2?.value)),
+                    true),
+                Rule(Type<TransferToken>, requiredRight<SelectorToken>(), optionalRight<AbsoluteToken>(), requiredRight<SelectorToken>(), requiredRight<VariableToken>(), optionalRight<VariableToken>(),
+                    (t, s1, to, s2, v1, v2) => new CommandToken(new TransferItemCommand(s1.value, s2.value, v1.value, v2?.value)),
+                    true),
 
                 //Convert Ambiguous Colon to Ternary Condition Separator
-                NoValueRule(Type<ColonSeparatorToken>, b => new TernaryConditionSeparatorToken()),
+                Rule(Type<ColonSeparatorToken>, b => new TernaryConditionSeparatorToken()),
 
                 //TernaryConditionProcessor
-                FourValueRule(Type<TernaryConditionIndicatorToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(), requiredRight<TernaryConditionSeparatorToken>(), requiredRight<VariableToken>(),
+                Rule(Type<TernaryConditionIndicatorToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(), requiredRight<TernaryConditionSeparatorToken>(), requiredRight<VariableToken>(),
                     (i, conditionValue, positiveValue, seperator, negativeValue) => new VariableToken(new TernaryConditionVariable() {
                         condition = conditionValue.value,
                         positiveValue = positiveValue.value,
@@ -287,24 +302,24 @@ namespace IngameScript {
                     })),
 
                 //IfProcessor
-                OneValueRule(Type<IfToken>, requiredRight<VariableToken>(),
+                Rule(Type<IfToken>, requiredRight<VariableToken>(),
                     (p, var) => new ConditionToken(p.inverseCondition ? new UnaryOperationVariable(UnaryOperator.REVERSE, var.value) : var.value, p.alwaysEvaluate, p.swapCommands)),
 
                 new BranchingProcessor<AmbiguousSelectorToken>(
-                    NoValueRule(Type<AmbiguousSelectorToken>, p => new VariableToken(((BlockSelector)p.value).selector)),
-                    NoValueRule(Type<AmbiguousSelectorToken>, p => new SelectorToken(p.value))
+                    Rule(Type<AmbiguousSelectorToken>, p => new VariableToken(((BlockSelector)p.value).selector)),
+                    Rule(Type<AmbiguousSelectorToken>, p => new SelectorToken(p.value))
                 ),
 
                 //AssignmentProcessor
-                TwoValueRule(Type<AssignmentToken>, optionalRight<GlobalToken>(), requiredRight<IdentifierToken>(),
+                Rule(Type<AssignmentToken>, optionalRight<GlobalToken>(), requiredRight<IdentifierToken>(),
                     (p, g, name) => new VariableAssignmentToken(name.value, p.value, g != null)),
 
                 //IncreaseProcessor
-                OneValueRule(Type<IncreaseToken>, requiredRight<IdentifierToken>(),
+                Rule(Type<IncreaseToken>, requiredRight<IdentifierToken>(),
                     (p, name) => new VariableIncrementToken(name.value, p.value)),
 
                 //IncrementProcessor
-                OneValueRule(Type<IncrementToken>, requiredLeft<IdentifierToken>(),
+                Rule(Type<IncrementToken>, requiredLeft<IdentifierToken>(),
                     (p, name) => new VariableIncrementToken(name.value, p.value)),
 
                 //NoValueRule(Type<IteratorAssignmentToken>, p => NewList<IToken>()),
@@ -313,9 +328,10 @@ namespace IngameScript {
                 //AmbiguousSelectorPropertyProcessor
                 new BranchingProcessor<SelectorToken>(
                     BlockCommandProcessor(),
-                    TwoValueRule(Type<SelectorToken>, requiredEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
-                        (s, p, d) => new VariableToken(new AggregatePropertyVariable(SumAggregator, s.value, p.value.WithDirection(d?.value)))),
-                    TwoValueRule(Type<SelectorToken>, optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
+                    Rule(Type<SelectorToken>, requiredEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
+                        (s, p, d) => new VariableToken(new AggregatePropertyVariable(SumAggregator, s.value, p.value.WithDirection(d?.value))),
+                        true),
+                    Rule(Type<SelectorToken>, optionalEither<PropertySupplierToken>(), optionalEither<DirectionToken>(),
                         (s, p, d) => AnyNotNull(p.GetValue(), d.GetValue()),
                         (s, p, d) => {
                             PropertySupplier property = p?.value ?? new PropertySupplier();
@@ -323,61 +339,61 @@ namespace IngameScript {
                             if (direction == null) property = property.WithPropertyValue(GetStaticVariable(true));
                             return new CommandToken(new BlockCommand(s.value, (b, e) =>
                                 b.UpdatePropertyValue(e, property.WithDirection(direction).Resolve(b))));
-                        })),
+                        }, true)),
 
                 //ListIndexAssignmentProcessor
-                TwoValueRule(Type<ListIndexAssignmentToken>, optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
+                Rule(Type<ListIndexAssignmentToken>, optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
                 (list, _, value) => new CommandToken(new ListVariableAssignmentCommand(list.listIndex, value.value, list.useReference))),
 
                 //PrintCommandProcessor
-                OneValueRule(Type<PrintToken>, requiredRight<VariableToken>(),
+                Rule(Type<PrintToken>, requiredRight<VariableToken>(),
                     (p, var) => new CommandToken(new PrintCommand(var.value))),
 
                 //WaitProcessor
-                OneValueRule(Type<WaitToken>, optionalRight<VariableToken>(),
+                Rule(Type<WaitToken>, optionalRight<VariableToken>(),
                     (p, time) => new CommandToken(new WaitCommand(time?.value ?? GetStaticVariable(0.01666f)))),
 
                 //FunctionCallCommandProcessor
-                OneValueRule(Type<FunctionDefinitionToken>, rightList<VariableToken>(false),
+                Rule(Type<FunctionDefinitionToken>, rightList<VariableToken>(false),
                     (p, variables) => new CommandToken(new FunctionCommand(p.switchExecution, p.functionDefinition, variables.Select(v => v.value).ToList()))),
 
                 //VariableAssignmentProcessor
-                TwoValueRule(Type<VariableAssignmentToken>, optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
+                Rule(Type<VariableAssignmentToken>, optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
                     (p, _, var) => new CommandToken(new VariableAssignmentCommand(p.variableName, var.value, p.useReference, p.isGlobal))),
 
                 //VariableIncrementProcessor
-                TwoValueRule(Type<VariableIncrementToken>, optionalRight<RelativeToken>(), optionalRight<VariableToken>(),
+                Rule(Type<VariableIncrementToken>, optionalRight<RelativeToken>(), optionalRight<VariableToken>(),
                     (increment, r, variable) => new CommandToken(new VariableIncrementCommand(increment.variableName, increment.value, variable?.value ?? GetStaticVariable(1)))),
                 //Handles --i
-                OneValueRule(Type<IncrementToken>, requiredRight<IdentifierToken>(),
+                Rule(Type<IncrementToken>, requiredRight<IdentifierToken>(),
                     (p, name) => new VariableIncrementToken(name.value, p.value)),
 
                 //SendCommandProcessor
                 //Note: Message to send always comes first: "send <command> to <tag>" is only supported format
-                ThreeValueRule(Type<SendToken>, requiredRight<VariableToken>(), optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
+                Rule(Type<SendToken>, requiredRight<VariableToken>(), optionalRight<AbsoluteToken>(), requiredRight<VariableToken>(),
                     (p, message, _, tag) => new CommandToken(new SendCommand(message.value, tag.value))),
 
                 //ListenCommandProcessor
-                OneValueRule(Type<ListenToken>, requiredRight<VariableToken>(),
+                Rule(Type<ListenToken>, requiredRight<VariableToken>(),
                     (p, var) => new CommandToken(new ListenCommand(var.value, p.value))),
 
                 //IterationProcessor
-                OneValueRule(Type<RepetitionToken>, requiredEither<CommandToken>(),
+                Rule(Type<RepetitionToken>, requiredEither<CommandToken>(),
                     (p, command) => new CommandToken(new MultiActionCommand(NewList(command.value), p.value))),
 
                 //QueueProcessor
-                OneValueRule(Type<QueueToken>, requiredRight<CommandToken>(),
+                Rule(Type<QueueToken>, requiredRight<CommandToken>(),
                     (p, command) => new CommandToken(new QueueCommand(command.value, p.value))),
 
                 //IteratorProcessor
-                FourValueRule(Type<IteratorToken>, requiredRight<VariableToken>(), optionalRight<InToken>(), requiredRight<VariableToken>(), requiredEither<CommandToken>(),
+                Rule(Type<IteratorToken>, requiredRight<VariableToken>(), optionalRight<InToken>(), requiredRight<VariableToken>(), requiredEither<CommandToken>(),
                     (i, item, _, list, command) => AllSatisfied(list, command, _, item) && item.GetValue().value is AmbiguousStringVariable,
                     (i, item, _, list, command) => new CommandToken(new ForEachCommand(((AmbiguousStringVariable)item.value).value, list.value, command.value))),
 
                 //ConditionalCommandProcessor
-                ThreeValueRule(Type<ConditionToken>, requiredRight<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
+                Rule(Type<ConditionToken>, requiredRight<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
                     ApplyCondition),
-                ThreeValueRule(Type<ConditionToken>, requiredLeft<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
+                Rule(Type<ConditionToken>, requiredLeft<CommandToken>(), optionalRight<ElseToken>(), optionalRight<CommandToken>(),
                     ApplyCondition)
             };
 

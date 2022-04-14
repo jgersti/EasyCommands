@@ -30,41 +30,76 @@ namespace IngameScript {
         public abstract class ValueToken<T> : SimpleToken {
             public T value;
             public ValueToken(T v) { value = v; }
-            //public override string ToString() => $"[{this.GetType().Name.Replace("Token", null)}:{typeof(T).Name}, l='{Lexeme ?? ""}']";
         }
 
+
+        #region Terminals / Input Tokens
+        // symbols
         public class IndexToken : SimpleToken { }
-        public class GroupToken : SimpleToken { }
         public class VariableSelectorToken : SimpleToken { }
-        public class NotToken : SimpleToken { }
-        public class AndToken : SimpleToken { }
-        public class OrToken : SimpleToken { }
         public class OpenParenthesisToken : SimpleToken { }
         public class CloseParenthesisToken : SimpleToken { }
         public class OpenBracketToken : SimpleToken { }
         public class ListSeparatorToken : SimpleToken { }
         public class CloseBracketToken : SimpleToken { }
-        public class IteratorToken : SimpleToken { }
+        public class KeyedVariableToken : SimpleToken { }
+        public class ColonSeparatorToken : SimpleToken { }
+        public class TernaryConditionIndicatorToken : SimpleToken { }
+        public class MinusToken : SimpleToken { }
+        public class IncrementToken : ValueToken<bool> {
+            public IncrementToken(bool increase = true) : base(increase) { }
+        }
+
+
+        // symbols with keywords
+        public class NotToken : SimpleToken { }
+        public class AndToken : SimpleToken { }
+        public class OrToken : SimpleToken { }
+
+        // keywords
+        public class GroupToken : SimpleToken { }
         public class RepeatToken : SimpleToken { }
         public class ReverseToken : SimpleToken { }
-        public class WaitToken : SimpleToken { }
-        public class SendToken : SimpleToken { }
         public class ElseToken : SimpleToken { }
-        public class PrintToken : SimpleToken { }
         public class Selftoken : SimpleToken { }
         public class GlobalToken : SimpleToken { }
         public class ThatToken : SimpleToken { }
-        public class KeyedVariableToken : SimpleToken { }
-        public class TernaryConditionIndicatorToken : SimpleToken { }
-        public class ColonSeparatorToken : SimpleToken { }
-        public class TernaryConditionSeparatorToken : SimpleToken { }
-        public class MinusToken : SimpleToken { }
         public class RoundToken : SimpleToken { }
         public class CastToken : SimpleToken { }
         public class RelativeToken : SimpleToken { }
         public class AbsoluteToken : SimpleToken { }
         public class InToken : SimpleToken { }
 
+        public class FunctionToken : ValueToken<bool> {
+            public FunctionToken(bool shouldSwitch) : base(shouldSwitch) { }
+        }
+
+        public class BooleanToken : ValueToken<bool> {
+            public BooleanToken(bool value) : base(value) { }
+        }
+
+        public class DirectionToken : ValueToken<Direction> {
+            public DirectionToken(Direction value) : base(value) { }
+        }
+
+        public class ValuePropertyToken : ValueToken<ValueProperty> {
+            public ValuePropertyToken(ValueProperty value) : base(value) { }
+        }
+
+        public class PropertyToken : ValueToken<Property> {
+            public PropertyToken(Property value) : base(value) { }
+        }
+
+        public class BlockTypeToken : ValueToken<Block> {
+            public BlockTypeToken(Block value) : base(value) { }
+        }
+
+
+        // action / control keywords
+        public class WaitToken : SimpleToken { }
+        public class IteratorToken : SimpleToken { }
+        public class PrintToken : SimpleToken { }
+        public class SendToken : SimpleToken { }
         public class ListenToken : ValueToken<bool> {
             public ListenToken(bool v) : base(v) { }
         }
@@ -72,6 +107,49 @@ namespace IngameScript {
         public class QueueToken : ValueToken<bool> {
             public QueueToken(bool async) : base(async) { }
         }
+
+        public class TransferToken : ValueToken<bool> {
+            public TransferToken(bool v) : base(v) { }
+        }
+
+        public class AssignmentToken : ValueToken<bool> {
+            public AssignmentToken(bool reference = false) : base(reference) { }
+        }
+
+        public class IncreaseToken : ValueToken<bool> {
+            public IncreaseToken(bool increase = true) : base(increase) { }
+        }
+
+        public class IfToken : SimpleToken {
+            public bool inverseCondition, alwaysEvaluate, swapCommands;
+
+            public IfToken(bool inverse, bool alwaysEval, bool swap) {
+                inverseCondition = inverse;
+                alwaysEvaluate = alwaysEval;
+                swapCommands = swap;
+            }
+        }
+
+        // misc
+        public class AmbiguousToken : SimpleToken {
+            public List<IToken> alternatives;
+
+            public AmbiguousToken(params IToken[] commands) {
+                alternatives = commands.ToList();
+            }
+        }
+        public class AmbiguousStringToken : ValueToken<String> {
+            public List<IToken> subTokens;
+            public bool isImplicit;
+            public AmbiguousStringToken(String value, bool impl, params IToken[] SubTokens) : base(value) {
+                subTokens = SubTokens.ToList();
+                isImplicit = impl;
+            }
+        }
+        #endregion
+
+        #region Transformations
+        public class TernaryConditionSeparatorToken : SimpleToken { }
 
         public class UnaryOperationToken : ValueToken<UnaryOperator> {
             public UnaryOperationToken(UnaryOperator value) : base(value) { }
@@ -88,20 +166,19 @@ namespace IngameScript {
             }
         }
 
-        public class TransferToken : ValueToken<bool> {
-            public TransferToken(bool v) : base(v) {}
+        public class ComparisonToken : ValueToken<PrimitiveComparator> {
+            public ComparisonToken(PrimitiveComparator value) : base(value) {
+            }
+        }
+        #endregion
+
+        #region Productions
+        public class VariableToken : ValueToken<IVariable> {
+            public VariableToken(IVariable value) : base(value) { }
         }
 
-        public class AssignmentToken : ValueToken<bool> {
-            public AssignmentToken(bool reference = false) : base(reference) { }
-        }
-
-        public class IncreaseToken : ValueToken<bool> {
-            public IncreaseToken(bool increase = true) : base(increase) { }
-        }
-
-        public class IncrementToken : ValueToken<bool> {
-            public IncrementToken(bool increase = true) : base(increase) { }
+        public class IdentifierToken : ValueToken<string> {
+            public IdentifierToken(string value) : base(value) { }
         }
 
         public class VariableAssignmentToken : SimpleToken {
@@ -132,69 +209,24 @@ namespace IngameScript {
             }
         }
 
-        public class VariableToken : ValueToken<IVariable> {
-            public VariableToken(IVariable value) : base(value) {}
-        }
-
-        public class AmbiguousToken : SimpleToken {
-            public List<IToken> alternatives;
-
-            public AmbiguousToken(params IToken[] commands) {
-                alternatives = commands.ToList();
-            }
-        }
-
-        public class AmbiguousStringToken : ValueToken<String> {
-            public List<IToken> subTokens;
-            public bool isImplicit;
-            public AmbiguousStringToken(String value, bool impl, params IToken[] SubTokens) : base(value) {
-                subTokens = SubTokens.ToList();
-                isImplicit = impl;
-            }
-        }
-
-        public class IdentifierToken : ValueToken<string> {
-            public IdentifierToken(string value) : base(value) { }
-        }
-
-        public class BooleanToken : ValueToken<bool> {
-            public BooleanToken(bool value) : base(value) {}
-        }
-
-        public class DirectionToken : ValueToken<Direction> {
-            public DirectionToken(Direction value) : base(value) {}
-        }
-
-        public class ValuePropertyToken : ValueToken<ValueProperty> {
-            public ValuePropertyToken(ValueProperty value) : base(value) {}
-        }
-
-        public class PropertyToken : ValueToken<Property> {
-            public PropertyToken(Property value) : base(value) { }
-        }
-
         public class PropertySupplierToken : ValueToken<PropertySupplier> {
-            public PropertySupplierToken(PropertySupplier value) : base(value) {}
+            public PropertySupplierToken(PropertySupplier value) : base(value) { }
         }
 
         public class ListToken : ValueToken<IVariable> {
-            public ListToken(IVariable v) : base(v) {}
-        }
-
-        public class ListIndexToken : ValueToken<ListIndexVariable> {
-            public ListIndexToken(ListIndexVariable v) : base(v) {}
+            public ListToken(IVariable v) : base(v) { }
         }
 
         //public class ListXXXToken : ValueToken<IVariable> {
         //    public ListXXXToken(IVariable v) : base(v) {}
         //}
 
-        public class IndexSelectorToken : ValueToken<IVariable> {
-            public IndexSelectorToken(IVariable value) : base(value) {}
+        public class ListIndexToken : ValueToken<ListIndexVariable> {
+            public ListIndexToken(ListIndexVariable v) : base(v) { }
         }
 
-        public class FunctionToken : ValueToken<bool> {
-            public FunctionToken(bool shouldSwitch) : base(shouldSwitch) {}
+        public class IndexSelectorToken : ValueToken<IVariable> {
+            public IndexSelectorToken(IVariable value) : base(value) { }
         }
 
         public class FunctionDefinitionToken : SimpleToken {
@@ -207,16 +239,6 @@ namespace IngameScript {
             }
         }
 
-        public class IfToken : SimpleToken {
-            public bool inverseCondition, alwaysEvaluate, swapCommands;
-
-            public IfToken(bool inverse, bool alwaysEval, bool swap) {
-                inverseCondition = inverse;
-                alwaysEvaluate = alwaysEval;
-                swapCommands = swap;
-            }
-        }
-
         public class ConditionToken : ValueToken<IVariable> {
             public bool alwaysEvaluate, swapCommands;
 
@@ -226,16 +248,17 @@ namespace IngameScript {
             }
         }
 
-        public class BlockConditionToken : ValueToken<BlockCondition> {
-            public BlockConditionToken(BlockCondition value) : base(value) { }
-        }
-
         public class CommandToken : ValueToken<Command> {
             public CommandToken(Command value) : base(value) { }
         }
 
+
+        public class BlockConditionToken : ValueToken<BlockCondition> {
+            public BlockConditionToken(BlockCondition value) : base(value) { }
+        }
+
         public class RepetitionToken : ValueToken<IVariable> {
-            public RepetitionToken(IVariable value) : base(value) {}
+            public RepetitionToken(IVariable value) : base(value) { }
         }
 
         public class AggregationModeToken : ValueToken<AggregationMode> {
@@ -245,11 +268,6 @@ namespace IngameScript {
 
         public class PropertyAggregationToken : ValueToken<Aggregator> {
             public PropertyAggregationToken(Aggregator value) : base(value) {
-            }
-        }
-
-        public class ComparisonToken : ValueToken<PrimitiveComparator> {
-            public ComparisonToken(PrimitiveComparator value) : base(value) {
             }
         }
 
@@ -263,8 +281,12 @@ namespace IngameScript {
             }
         }
 
-        public class BlockTypeToken : ValueToken<Block> {
-            public BlockTypeToken(Block value) : base(value) {}
+        public class BlockGroupToken : ValueToken<Block> {
+            public bool group;
+            public BlockGroupToken(Block value, bool g) : base(value) {
+                group = g;
+            }
         }
+        #endregion
     }
 }

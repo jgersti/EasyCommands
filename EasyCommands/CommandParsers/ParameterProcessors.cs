@@ -138,7 +138,7 @@ namespace IngameScript {
         }
 
         static RuleProcessor<BinaryOperandToken> BiOperandProcessor(int tier) =>
-            TwoValueRule(Type<BinaryOperandToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
+            Rule(Type<BinaryOperandToken>, requiredLeft<VariableToken>(), requiredRight<VariableToken>(),
                 (op, left, right) => op.tier == tier && AllSatisfied(left, right),
                 (op, left, right) => new VariableToken(new BinaryOperationVariable(op.value, left.value, right.value)));
 
@@ -289,7 +289,7 @@ namespace IngameScript {
                 return new CommandToken(new BlockCommand(p.value, blockAction));
             };
 
-            return new RuleProcessor<SelectorToken>(processors, validate, apply);
+            return new RuleProcessor<SelectorToken>(processors, validate, apply, true);
         }
 
         // this no rule
@@ -304,32 +304,32 @@ namespace IngameScript {
         //Rule Processors
         public class RuleProcessor<T> : ParameterProcessor<T> where T : class, IToken {
             public List<IMatch> matches;
-            public Validate<T> validate;
-            public Apply<T> apply;
+            Validate<T> validate;
+            Apply<T> apply;
+            bool permutation;
 
-            public RuleProcessor(List<IMatch> m, Validate<T> val, Apply<T> app) {
+            public RuleProcessor(List<IMatch> m, Validate<T> val, Apply<T> app, bool perm = false) {
                 matches = m;
                 validate = val;
                 apply = app;
+                permutation = perm;
             }
 
             public override bool Process(List<IToken> tokens, int i, out List<IToken> result, List<List<IToken>> branches) {
                 result = null;
                 matches.ForEach(m => m.Clear());
 
-                //int j = i+1;
-                //for (int n = 0; n < matches.Count; ++n)
-                //    while (j < tokens.Count && matches[n].Right(tokens[j])) ++j;
-
-                //int k = i;
-                //for (int n = matches.Count - 1; n >= 0; --n)
-                //    while (k > 0 && matches[n].Left(tokens[k - 1])) --k;
-
-                int j = i + 1;
-                while (j < tokens.Count && matches.Exists(m => m.Right(tokens[j]))) j++;
-
+                int j = i+1;
                 int k = i;
-                while (k > 0 && matches.Exists(m => m.Left(tokens[k - 1]))) k--;
+                if (permutation) {
+                    while (j < tokens.Count && matches.Exists(m => m.Right(tokens[j]))) j++;
+                    while (k > 0 && matches.Exists(m => m.Left(tokens[k - 1]))) k--;
+                } else {
+                    for (int n = 0; n < matches.Count; ++n)
+                        while (j < tokens.Count && matches[n].Right(tokens[j])) ++j;
+                    for (int n = matches.Count - 1; n >= 0; --n)
+                        while (k > 0 && matches[n].Left(tokens[k - 1])) --k;
+                }
 
                 T anchor = (T)tokens[i];
                 if (!validate(anchor)) return false;
@@ -631,49 +631,49 @@ namespace IngameScript {
             }
         }
 
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Apply<T> apply) where T : class, IToken =>
-            NoValueRule(type, p => true, apply);
-        static RuleProcessor<T> NoValueRule<T>(Supplier<T> type, Validate<T> validate, Apply<T> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(), validate, apply);
+        static RuleProcessor<T> Rule<T>(Supplier<T> type, Apply<T> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, p => true, apply, permutation);
+        static RuleProcessor<T> Rule<T>(Supplier<T> type, Validate<T> validate, Apply<T> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(), validate, apply, permutation);
 
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueApply<T, U> apply) where T : class, IToken =>
-            OneValueRule(type, u, (p, a) => a.Satisfied(), apply);
-        static RuleProcessor<T> OneValueRule<T, U>(Supplier<T> type, Match<U> u, OneValueValidate<T, U> validate, OneValueApply<T, U> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u), p => validate(p, u), p => apply(p, u.GetValue()));
+        static RuleProcessor<T> Rule<T, U>(Supplier<T> type, Match<U> u, Apply<T, U> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, u, (p, a) => a.Satisfied(), apply, permutation);
+        static RuleProcessor<T> Rule<T, U>(Supplier<T> type, Match<U> u, Validate<T, U> validate, Apply<T, U> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u), p => validate(p, u), p => apply(p, u.GetValue()), permutation);
 
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueApply<T, U, V> apply) where T : class, IToken =>
-            TwoValueRule(type, u, v, (p, a, b) => AllSatisfied(a, b), apply);
-        static RuleProcessor<T> TwoValueRule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, TwoValueValidate<T, U, V> validate, TwoValueApply<T, U, V> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v), p => validate(p, u, v), p => apply(p, u.GetValue(), v.GetValue()));
+        static RuleProcessor<T> Rule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, Apply<T, U, V> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, u, v, (p, a, b) => AllSatisfied(a, b), apply, permutation);
+        static RuleProcessor<T> Rule<T, U, V>(Supplier<T> type, Match<U> u, Match<V> v, Validate<T, U, V> validate, Apply<T, U, V> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v), p => validate(p, u, v), p => apply(p, u.GetValue(), v.GetValue()), permutation);
 
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueApply<T, U, V, W> apply) where T : class, IToken =>
-            ThreeValueRule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), apply);
-        static RuleProcessor<T> ThreeValueRule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, ThreeValueValidate<T, U, V, W> validate, ThreeValueApply<T, U, V, W> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v, w), p => validate(p, u, v, w), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue()));
+        static RuleProcessor<T> Rule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Apply<T, U, V, W> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, u, v, w, (p, a, b, c) => AllSatisfied(a, b, c), apply, permutation);
+        static RuleProcessor<T> Rule<T, U, V, W>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Validate<T, U, V, W> validate, Apply<T, U, V, W> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w), p => validate(p, u, v, w), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue()), permutation);
 
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueApply<T, U, V, W, X> apply) where T : class, IToken =>
-            FourValueRule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), apply);
-        static RuleProcessor<T> FourValueRule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, FourValueValidate<T, U, V, W, X> validate, FourValueApply<T, U, V, W, X> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => validate(p, u, v, w, x), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()));
+        static RuleProcessor<T> Rule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Apply<T, U, V, W, X> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, u, v, w, x, (p, a, b, c, d) => AllSatisfied(a, b, c, d), apply, permutation);
+        static RuleProcessor<T> Rule<T, U, V, W, X>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Validate<T, U, V, W, X> validate, Apply<T, U, V, W, X> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x), p => validate(p, u, v, w, x), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue()), permutation);
 
-        static RuleProcessor<T> FiveValueRule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, FiveValueApply<T, U, V, W, X, Y> apply) where T : class, IToken =>
-            FiveValueRule(type, u, v, w, x, y, (p, a, b, c, d, e) => AllSatisfied(a, b, c, d, e), apply);
-        static RuleProcessor<T> FiveValueRule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, FiveValueValidate<T, U, V, W, X, Y> validate, FiveValueApply<T, U, V, W, X, Y> apply) where T : class, IToken =>
-            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x, y), p => validate(p, u, v, w, x, y), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue(), y.GetValue()));
+        static RuleProcessor<T> Rule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, Apply<T, U, V, W, X, Y> apply, bool permutation = false) where T : class, IToken =>
+            Rule(type, u, v, w, x, y, (p, a, b, c, d, e) => AllSatisfied(a, b, c, d, e), apply, permutation);
+        static RuleProcessor<T> Rule<T, U, V, W, X, Y>(Supplier<T> type, Match<U> u, Match<V> v, Match<W> w, Match<X> x, Match<Y> y, Validate<T, U, V, W, X, Y> validate, Apply<T, U, V, W, X, Y> apply, bool permutation = false) where T : class, IToken =>
+            new RuleProcessor<T>(NewList<IMatch>(u, v, w, x, y), p => validate(p, u, v, w, x, y), p => apply(p, u.GetValue(), v.GetValue(), w.GetValue(), x.GetValue(), y.GetValue()), permutation);
 
         //Utility delegates to efficiently create Rule Processors
         public delegate bool Validate<T>(T t);
-        delegate bool OneValueValidate<T, U>(T t, Match<U> a);
-        delegate bool TwoValueValidate<T, U, V>(T t, Match<U> a, Match<V> b);
-        delegate bool ThreeValueValidate<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
-        delegate bool FourValueValidate<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
-        delegate bool FiveValueValidate<T, U, V, W, X, Y>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d, Match<Y> e);
+        public delegate bool Validate<T, U>(T t, Match<U> a);
+        public delegate bool Validate<T, U, V>(T t, Match<U> a, Match<V> b);
+        public delegate bool Validate<T, U, V, W>(T t, Match<U> a, Match<V> b, Match<W> c);
+        public delegate bool Validate<T, U, V, W, X>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d);
+        public delegate bool Validate<T, U, V, W, X, Y>(T t, Match<U> a, Match<V> b, Match<W> c, Match<X> d, Match<Y> e);
 
         public delegate object Apply<T>(T t);
-        delegate object OneValueApply<T, U>(T t, U a);
-        delegate object TwoValueApply<T, U, V>(T t, U a, V b);
-        delegate object ThreeValueApply<T, U, V, W>(T t, U a, V b, W c);
-        delegate object FourValueApply<T, U, V, W, X>(T t, U a, V b, W c, X d);
-        delegate object FiveValueApply<T, U, V, W, X, Y>(T t, U a, V b, W c, X d, Y e);
+        public delegate object Apply<T, U>(T t, U a);
+        public delegate object Apply<T, U, V>(T t, U a, V b);
+        public delegate object Apply<T, U, V, W>(T t, U a, V b, W c);
+        public delegate object Apply<T, U, V, W, X>(T t, U a, V b, W c, X d);
+        public delegate object Apply<T, U, V, W, X, Y>(T t, U a, V b, W c, X d, Y e);
     }
 }
